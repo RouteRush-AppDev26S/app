@@ -13,7 +13,7 @@ import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Position
 
 @Composable
-fun MapLayer(innerPaddingValues: PaddingValues) {
+fun MapLayer() {
     val cameraState =
         rememberCameraState(CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0))
     MaplibreMap(

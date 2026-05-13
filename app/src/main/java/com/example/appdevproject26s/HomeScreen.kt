@@ -12,6 +12,6 @@ fun HomeScreen(navController: NavController) {
         title = stringResource(R.string.home_title),
         showBackButton = false
     ) {
-        Text("Home Screen")
+        MapLayer()
     }
 }

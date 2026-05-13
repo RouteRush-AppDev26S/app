@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
@@ -97,7 +98,7 @@ fun NavDrawer(
 
 
         },
-        gesturesEnabled = true // enables swipe to open/close drawer
+        gesturesEnabled = drawerState.currentValue != DrawerValue.Closed // enables swipe to close draw only
     ) {
         content()
     }
