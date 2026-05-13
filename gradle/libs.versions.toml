@@ -9,6 +9,7 @@ activityCompose = "1.13.0"
 kotlin = "2.2.10"
 composeBom = "2026.02.01"
 navigationCompose = "2.9.8"
+maplibreCompose = "0.12.1"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -28,6 +29,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+maplibre-composeMaterial3 = { module = "org.maplibre.compose:maplibre-compose-material3-android", version.ref = "maplibreCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
