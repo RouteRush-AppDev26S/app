@@ -3,11 +3,15 @@ package com.example.appdevproject26s
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -63,52 +67,63 @@ fun MapLayer(onMenuClick: () -> Unit = {}) {
         ) {
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
         }
-        CompassOverlay(
-            bearing = cameraState.position.bearing,
-            onCompassClick = {
-                scope.launch {
-                    val startBearing = cameraState.position.bearing
-                    val targetBearing = if (startBearing > 180) startBearing - 360 else startBearing
-                    val animatable = Animatable(targetBearing.toFloat())
-
-                    animatable.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            durationMillis = 400,
-                            easing = FastOutSlowInEasing
-                        )
-                    ) {
-                        cameraState.position = CameraPosition(
-                            target = cameraState.position.target,
-                            zoom = cameraState.position.zoom,
-                            bearing = this@animateTo.value.toDouble()
-                        )
-                    }
-                }
-            },
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(16.dp)
-        )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            val iconModifier = Modifier.size(72.dp)
+
+            CompassOverlay(
+                bearing = cameraState.position.bearing,
+                onCompassClick = {
+                    scope.launch {
+                        val startBearing = cameraState.position.bearing
+                        val targetBearing =
+                            if (startBearing > 180) startBearing - 360 else startBearing
+                        val animatable = Animatable(targetBearing.toFloat())
+
+                        animatable.animateTo(
+                            targetValue = 0f, animationSpec = tween(
+                                durationMillis = 400, easing = FastOutSlowInEasing
+                            )
+                        ) {
+                            cameraState.position = CameraPosition(
+                                target = cameraState.position.target,
+                                zoom = cameraState.position.zoom,
+                                bearing = this@animateTo.value.toDouble()
+                            )
+                        }
+                    }
+                },
+                modifier = iconModifier
+            )
+            IconButton(
+                onClick = onMenuClick, modifier = iconModifier
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+        }
     }
 }
 
 @Composable
 fun CompassOverlay(
-    bearing: Double,
-    onCompassClick: () -> Unit,
-    modifier: Modifier = Modifier
+    bearing: Double, onCompassClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     IconButton(
         onClick = onCompassClick,
-        modifier = modifier
-            .graphicsLayer { rotationZ = -bearing.toFloat()-45f }
-            .size(72.dp)
-    ) {
+        modifier = modifier.graphicsLayer { rotationZ = -bearing.toFloat() - 45f }) {
         Icon(
             imageVector = Icons.Default.Explore,
             contentDescription = "Compass",
-            modifier = Modifier.size(72.dp),
+            modifier = Modifier.fillMaxSize()
         )
     }
 }

@@ -1,6 +1,5 @@
 package com.example.appdevproject26s
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
@@ -11,7 +10,7 @@ fun HomeScreen(navController: NavController) {
         navController = navController,
         title = stringResource(R.string.home_title),
         showBackButton = false
-    ) {
-        MapLayer()
+    ) { openDrawer ->
+        MapLayer(onMenuClick = { openDrawer() })
     }
 }

@@ -25,10 +25,14 @@ fun ScreenScaffold(
     navController: NavController,
     title: String,
     showBackButton: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable (openDrawer: () -> Unit ) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    val openDrawerAction: () -> Unit = {
+        scope.launch { drawerState.open() }
+    }
 
     Scaffold(
         topBar = {
@@ -66,7 +70,7 @@ fun ScreenScaffold(
                 drawerState = drawerState,
                 modifier = Modifier.padding(innerPadding),
             ) {
-                content()
+                content(openDrawerAction)
             }
         }
     )
