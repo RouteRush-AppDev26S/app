@@ -3,23 +3,13 @@ package com.example.appdevproject26s
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
@@ -35,8 +25,31 @@ import org.maplibre.spatialk.geojson.Position
 @Composable
 fun MapLayer(onMenuClick: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
+    var fullscreen by remember { mutableStateOf(false) }
     val cameraState =
         rememberCameraState(CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0))
+
+    val resetNorth: () -> Unit = {
+        scope.launch {
+            val startBearing = cameraState.position.bearing
+            val targetBearing =
+                if (startBearing > 180) startBearing - 360 else startBearing
+            val animatable = Animatable(targetBearing.toFloat())
+
+            animatable.animateTo(
+                targetValue = 0f, animationSpec = tween(
+                    durationMillis = 400, easing = FastOutSlowInEasing
+                )
+            ) {
+                cameraState.position = CameraPosition(
+                    target = cameraState.position.target,
+                    zoom = cameraState.position.zoom,
+                    bearing = this@animateTo.value.toDouble()
+                )
+            }
+        }
+
+    }
 
     Box {
         MaplibreMap(
@@ -48,6 +61,7 @@ fun MapLayer(onMenuClick: () -> Unit = {}) {
             // 3. Click Interaction
             onMapClick = { point, screenPoint ->
                 // Return Pass to allow the event to propagate to other layers
+                fullscreen = !fullscreen
                 ClickResult.Pass
             },
             // 4. Map Options (UI and Gestures)
@@ -67,63 +81,13 @@ fun MapLayer(onMenuClick: () -> Unit = {}) {
         ) {
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
         }
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            val iconModifier = Modifier.size(72.dp)
-
-            CompassOverlay(
-                bearing = cameraState.position.bearing,
-                onCompassClick = {
-                    scope.launch {
-                        val startBearing = cameraState.position.bearing
-                        val targetBearing =
-                            if (startBearing > 180) startBearing - 360 else startBearing
-                        val animatable = Animatable(targetBearing.toFloat())
-
-                        animatable.animateTo(
-                            targetValue = 0f, animationSpec = tween(
-                                durationMillis = 400, easing = FastOutSlowInEasing
-                            )
-                        ) {
-                            cameraState.position = CameraPosition(
-                                target = cameraState.position.target,
-                                zoom = cameraState.position.zoom,
-                                bearing = this@animateTo.value.toDouble()
-                            )
-                        }
-                    }
-                },
-                modifier = iconModifier
+        if (!fullscreen) {
+            IconLayer(
+                cameraState = cameraState,
+                onResetToNorth = resetNorth,
+                onMenuClick = onMenuClick
             )
-            IconButton(
-                onClick = onMenuClick, modifier = iconModifier
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
         }
     }
 }
 
-@Composable
-fun CompassOverlay(
-    bearing: Double, onCompassClick: () -> Unit, modifier: Modifier = Modifier
-) {
-    IconButton(
-        onClick = onCompassClick,
-        modifier = modifier.graphicsLayer { rotationZ = -bearing.toFloat() - 45f }) {
-        Icon(
-            imageVector = Icons.Default.Explore,
-            contentDescription = "Compass",
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}

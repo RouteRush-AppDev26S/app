@@ -1,0 +1,72 @@
+package com.example.appdevproject26s
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
+import org.maplibre.compose.camera.CameraState
+
+@Composable
+fun IconLayer(
+    modifier: Modifier = Modifier,
+    cameraState: CameraState,
+    onResetToNorth: () -> Unit,
+    onMenuClick: () -> Unit
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            val iconModifier = Modifier.size(72.dp)
+
+            CompassOverlay(
+                bearing = cameraState.position.bearing,
+                onCompassClick = onResetToNorth,
+
+                modifier = iconModifier
+            )
+            IconButton(
+                onClick = onMenuClick, modifier = iconModifier
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+        }
+    }
+}
+
+@Composable
+fun CompassOverlay(
+    modifier: Modifier = Modifier,
+    bearing: Double,
+    onCompassClick: () -> Unit
+) {
+    IconButton(
+        onClick = onCompassClick,
+        modifier = modifier.graphicsLayer { rotationZ = -bearing.toFloat() - 45f }) {
+        Icon(
+            imageVector = Icons.Default.Explore,
+            contentDescription = "Compass",
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
