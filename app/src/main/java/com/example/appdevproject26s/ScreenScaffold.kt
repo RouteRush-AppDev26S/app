@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 fun ScreenScaffold(
     navController: NavController,
     title: String,
+    showTopBar: Boolean = true,
     showBackButton: Boolean = true,
     content: @Composable (openDrawer: () -> Unit ) -> Unit
 ) {
@@ -36,32 +37,34 @@ fun ScreenScaffold(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    if (showBackButton) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+            if (showTopBar) {
+                TopAppBar(
+                    title = { Text(title) },
+                    navigationIcon = {
+                        if (showBackButton) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        // opens and closes drawer using menu icon on top right
+                        IconButton(onClick = {
+                            scope.launch {
+                                drawerState.apply { if (isClosed) open() else close() }
+                            }
+                        }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                Icons.Default.Menu,
+                                contentDescription = "Navigation Drawer"
                             )
                         }
                     }
-                },
-                actions = {
-                    // opens and closes drawer using menu icon on top right
-                    IconButton(onClick = {
-                        scope.launch {
-                            drawerState.apply { if (isClosed) open() else close() }
-                        }
-                    }) {
-                        Icon(
-                            Icons.Default.Menu,
-                            contentDescription = "Navigation Drawer"
-                        )
-                    }
-                }
-            )
+                )
+            }
         },
 
         content = { innerPadding ->

@@ -9,6 +9,7 @@ fun HomeScreen(navController: NavController) {
     ScreenScaffold(
         navController = navController,
         title = stringResource(R.string.home_title),
+        showTopBar = false,
         showBackButton = false
     ) { openDrawer ->
         MapLayer(onMenuClick = { openDrawer() })
