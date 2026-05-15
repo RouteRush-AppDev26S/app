@@ -1,5 +1,6 @@
 package com.example.appdevproject26s
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,6 +16,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
@@ -26,6 +28,7 @@ fun ScreenScaffold(
     title: String,
     showTopBar: Boolean = true,
     showBackButton: Boolean = true,
+    useInnerPadding: Boolean = true,
     content: @Composable (openDrawer: () -> Unit ) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -67,11 +70,17 @@ fun ScreenScaffold(
             }
         },
 
+
         content = { innerPadding ->
+            var paddingValues = PaddingValues(0.dp)
+            if (useInnerPadding) {
+                paddingValues = innerPadding
+            }
+
             NavDrawer(
                 navController= navController,
                 drawerState = drawerState,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier.padding(paddingValues),
             ) {
                 content(openDrawerAction)
             }

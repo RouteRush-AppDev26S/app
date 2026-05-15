@@ -10,7 +10,8 @@ fun HomeScreen(navController: NavController) {
         navController = navController,
         title = stringResource(R.string.home_title),
         showTopBar = false,
-        showBackButton = false
+        showBackButton = false,
+        useInnerPadding = false
     ) { openDrawer ->
         MapLayer(onMenuClick = { openDrawer() })
     }

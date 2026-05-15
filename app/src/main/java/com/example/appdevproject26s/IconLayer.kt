@@ -28,8 +28,7 @@ fun IconLayer(
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
+                .align(Alignment.BottomStart),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val iconModifier = Modifier.size(72.dp)
