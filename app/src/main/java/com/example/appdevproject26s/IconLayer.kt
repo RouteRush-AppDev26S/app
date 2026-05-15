@@ -16,14 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import org.maplibre.compose.camera.CameraState
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun IconLayer(
     modifier: Modifier = Modifier,
-    cameraState: CameraState,
     onResetToNorth: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    homeViewModel: HomeScreenViewModel = viewModel()
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -35,7 +35,7 @@ fun IconLayer(
             val iconModifier = Modifier.size(72.dp)
 
             CompassOverlay(
-                bearing = cameraState.position.bearing,
+                bearing = homeViewModel.cameraState.position.bearing,
                 onCompassClick = onResetToNorth,
 
                 modifier = iconModifier

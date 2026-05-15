@@ -5,14 +5,11 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.map.GestureOptions
 import org.maplibre.compose.map.MapOptions
 import org.maplibre.compose.map.MaplibreMap
@@ -20,14 +17,15 @@ import org.maplibre.compose.map.OrnamentOptions
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.style.rememberStyleState
 import org.maplibre.compose.util.ClickResult
-import org.maplibre.spatialk.geojson.Position
 
 @Composable
-fun MapLayer(onMenuClick: () -> Unit = {}) {
+fun MapLayer(
+    onMenuClick: () -> Unit = {},
+    homeViewModel: HomeScreenViewModel = viewModel()
+) {
     val scope = rememberCoroutineScope()
-    var fullscreen by remember { mutableStateOf(false) }
-    val cameraState =
-        rememberCameraState(CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0))
+
+    val cameraState = homeViewModel.cameraState
 
     val resetNorth: () -> Unit = {
         scope.launch {
@@ -56,12 +54,12 @@ fun MapLayer(onMenuClick: () -> Unit = {}) {
             // 1. Set the style (as discussed previously)
             baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
             // 2. State Management
-            cameraState = cameraState,
+            cameraState = homeViewModel.cameraState,
             styleState = rememberStyleState(),
             // 3. Click Interaction
             onMapClick = { point, screenPoint ->
                 // Return Pass to allow the event to propagate to other layers
-                fullscreen = !fullscreen
+                homeViewModel.onMapTap()
                 ClickResult.Pass
             },
             // 4. Map Options (UI and Gestures)
@@ -81,11 +79,10 @@ fun MapLayer(onMenuClick: () -> Unit = {}) {
         ) {
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
         }
-        if (!fullscreen) {
+        if (!homeViewModel.fullscreen.collectAsState().value) {
             IconLayer(
-                cameraState = cameraState,
-                onResetToNorth = resetNorth,
-                onMenuClick = onMenuClick
+                onMenuClick = onMenuClick,
+                onResetToNorth = resetNorth
             )
         }
     }
