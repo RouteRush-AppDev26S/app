@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -26,8 +27,16 @@ import org.maplibre.compose.util.ClickResult
 @Composable
 fun MapLayer(
     onMenuClick: () -> Unit = {},
-    homeViewModel: HomeScreenViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+
+    val app = context.applicationContext as MapApplication
+    val repository = app.repository
+
+    val homeViewModel: HomeScreenViewModel = viewModel(
+        factory = HomeScreenViewModel.provideFactory(repository)
+    )
+
     val scope = rememberCoroutineScope()
 
     val cameraState = homeViewModel.cameraState

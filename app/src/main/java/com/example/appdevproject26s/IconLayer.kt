@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -23,8 +24,16 @@ fun IconLayer(
     modifier: Modifier = Modifier,
     onResetToNorth: () -> Unit,
     onMenuClick: () -> Unit,
-    homeViewModel: HomeScreenViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+
+    val app = context.applicationContext as MapApplication
+    val repository = app.repository
+
+    val homeViewModel: HomeScreenViewModel = viewModel(
+        factory = HomeScreenViewModel.provideFactory(repository)
+    )
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier

@@ -1,5 +1,6 @@
 package com.example.appdevproject26s
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,5 +33,11 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("home") { HomeScreen(navController) }
         composable( route = "route" ) { RouteScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
+    }
+}
+
+class MapApplication : Application() {
+    val repository: MapSettingsRepository by lazy {
+        MapSettingsRepository(dataStore)
     }
 }
