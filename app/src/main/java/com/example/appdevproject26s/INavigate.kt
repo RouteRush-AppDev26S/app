@@ -1,10 +1,10 @@
 package com.example.appdevproject26s
 
-import com.example.appdevproject26s.navigate.Trip
-import com.example.appdevproject26s.navigate.VLocation
-import org.maplibre.spatialk.geojson.Position
 
-interface Navigate
+import org.maplibre.spatialk.geojson.Position
+import com.example.appdevproject26s.navigate.*
+
+interface INavigate
 {
     /**
      * Berechnet die Route und speichert sie ab

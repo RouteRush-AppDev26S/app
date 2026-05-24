@@ -1,13 +1,17 @@
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
+import org.maplibre.android.geometry.LatLng
 import org.maplibre.spatialk.geojson.Position
 import com.example.appdevproject26s.INavigate
 /*
 *                    Written by Hans Wornik
 *           Implementation of the Navigate Interface
  */
+import android.util.Log
+
 object Navigate : INavigate{
+    private const val TAG = "Navigate"
 
     private var db: RouteDao? = null
 
@@ -28,25 +32,45 @@ object Navigate : INavigate{
     }
 
     override suspend fun calcRoute(start: VLocation, stop: VLocation, vehicle: String): Trip? {
-        val request = ValhallaRequest(
-            locations = listOf(start, stop),
-            costing = vehicle
+        val request = OrsRequest(
+            coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat))
         )
 
         val response = try {
-            ValhallaClient.api.getRoute(request)
-        } catch (_: Exception) {
+            OrsClient.api.getRoute(OrsClient.API_KEY, request)
+        } catch (e: Exception) {
+            Log.e(TAG, "ORS API Exception: ${e.message}", e)
             null
         }
 
-        if (response == null || !response.isSuccessful) return null
+        if (response == null || !response.isSuccessful) {
+            val errorMsg = "ORS API Error: ${response?.code()} ${response?.message()}"
+            Log.e(TAG, errorMsg)
+            val errorBody = response?.errorBody()?.string()
+            Log.e(TAG, "ORS Error Body: $errorBody")
+            return null
+        }
 
-        val trip = response.body()?.trip ?: return null
+        val body = response.body()
+        Log.d(TAG, "ORS API Success. Body: $body")
+        val route = body?.routes?.firstOrNull()
+
+        if (route == null) {
+            Log.e(TAG, "ORS Route is NULL")
+            return null
+        }
+
+        val trip = Trip(
+            summary = route.summary,
+            segments = route.segments,
+            extras = route.extras
+        )
+
         currentTrip = trip
-        totalLengthKM = trip.summary.length
-        durationSeconds = trip.summary.time.toLong()
-        val leg = trip.legs.firstOrNull()
-        routePoints = if (leg != null) decodePolyline(leg.shape) else emptyList()
+        totalLengthKM = trip.summary.distance
+        durationSeconds = trip.summary.duration.toLong()
+
+        routePoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
 
         db?.insertRoute(
             RouteEntity(
@@ -65,8 +89,8 @@ object Navigate : INavigate{
         val last = db?.getLastRoute() ?: return null
         val trip = RouteConverter.jsonToTrip(last.tripJson)
         currentTrip = trip
-        totalLengthKM = trip.summary.length
-        durationSeconds = trip.summary.time.toLong()
+        totalLengthKM = trip.summary.distance
+        durationSeconds = trip.summary.duration.toLong()
         routePoints = RouteConverter.jsonToPoints(last.routePointsJson)
         return trip
     }
@@ -76,22 +100,46 @@ object Navigate : INavigate{
     suspend fun deleteRouteFromHistory(routeId: Int) { db?.deleteRouteById(routeId) }
 
     override suspend fun getSpeedLimit(now: VLocation): Int? {
-        val trip = currentTrip
-        if (trip != null && routePoints.isNotEmpty()) {
-            val closestIndex = Zeitberechnung.findClosestShapeIndex(Position(now.lon, now.lat), routePoints)
-            val maneuver = trip.legs.firstOrNull()?.maneuvers?.find {
-                closestIndex >= it.begin_shape_index && closestIndex <= it.end_shape_index
-            }
-            return maneuver?.speed_limit
-        } else {
-            val request = TraceAttributesRequest(shape = listOf(now))
-            val response = try {
-                ValhallaClient.api.getTraceAttributes(request)
-            } catch (_: Exception) {
+        val query = "[out:json];way(around:50,${now.lat},${now.lon})[highway];out tags;"
+        Log.d(TAG, "Overpass query: $query")
+        return try {
+            val response = OverpassClient.api.query(query)
+            Log.d(TAG, "Overpass HTTP ${response.code()}")
+            if (response.isSuccessful) {
+                val elements = response.body()?.elements ?: run {
+                    Log.e(TAG, "Overpass body null")
+                    return null
+                }
+                Log.d(TAG, "Overpass elements: ${elements.size}")
+                elements.forEach { el ->
+                    Log.d(TAG, "  way ${el.id}: highway=${el.tags?.get("highway")} maxspeed=${el.tags?.get("maxspeed")}")
+                }
+                val explicit = elements
+                    .mapNotNull { it.tags?.get("maxspeed") }
+                    .firstNotNullOfOrNull { parseMaxspeed(it) }
+                val hw = elements.firstNotNullOfOrNull { it.tags?.get("highway") }
+                val result = explicit ?: defaultSpeedForHighway(hw)
+                Log.d(TAG, "SpeedLimit result: $result (explicit=$explicit, highway=$hw)")
+                result
+            } else {
+                Log.e(TAG, "Overpass Error: ${response.code()} body=${response.errorBody()?.string()}")
                 null
             }
-            return response?.body()?.edges?.firstOrNull()?.speed_limit
+        } catch (e: Exception) {
+            Log.e(TAG, "Overpass Exception: ${e.message}", e)
+            null
         }
+    }
+
+    private fun defaultSpeedForHighway(highway: String?): Int? = when (highway) {
+        "motorway"                    -> 130
+        "trunk"                       -> 100
+        "primary", "secondary"        -> 100
+        "tertiary"                    -> 70
+        "unclassified", "residential" -> 50
+        "living_street"               -> 7
+        "service"                     -> 10
+        else                          -> null
     }
 
     override fun stopRoute() {
@@ -99,39 +147,5 @@ object Navigate : INavigate{
         routePoints = emptyList()
         totalLengthKM = 0.0
         durationSeconds = 0
-    }
-
-    private fun decodePolyline(encoded: String, precision: Double = 1e6): List<Position> {
-        val poly = ArrayList<Position>()
-        var index = 0
-        val len = encoded.length
-        var lat = 0
-        var lng = 0
-
-        while (index < len) {
-            var b: Int
-            var shift = 0
-            var result = 0
-            do {
-                b = encoded[index++].code - 63
-                result = result or (b and 0x1f shl shift)
-                shift += 5
-            } while (b >= 0x20)
-            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            lat += dlat
-
-            shift = 0
-            result = 0
-            do {
-                b = encoded[index++].code - 63
-                result = result or (b and 0x1f shl shift)
-                shift += 5
-            } while (b >= 0x20)
-            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            lng += dlng
-
-            poly.add(Position(lng / precision, lat / precision))
-        }
-        return poly
     }
 }

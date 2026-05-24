@@ -10,50 +10,55 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*
 
-/**
- * Test für den Navigator, der Ausgaben in die Konsole/Logcat schreibt.
- * Dieser Test muss auf einem Emulator oder physischen Gerät ausgeführt werden.
- */
 @RunWith(AndroidJUnit4::class)
 class NavigatorTest {
 
     @Before
     fun setup() {
-        // Initialisiere den Navigator mit dem Test-Context für den Datenbankzugriff
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         Navigate.init(appContext)
     }
 
     @Test
-    fun testNavigatorOutput() = runBlocking {
-        // Beispiel-Koordinaten: Klagenfurt nach Villach
+    fun testNavigatorOutput(): Unit = runBlocking {
         val start = VLocation(lat = 46.6247, lon = 14.3053)
-        val stop = VLocation(lat = 46.6103, lon = 13.8558)
-        
+        val stop  = VLocation(lat = 46.6103, lon = 13.8558)
+
         println("--- NAVIGATOR TEST START ---")
         println("Route: Klagenfurt -> Villach")
-        
-        val trip = Navigate.calcRoute(start, stop, "auto")
-        
+
+        val trip = try {
+            Navigate.calcRoute(start, stop, "auto")
+        } catch (e: Exception) {
+            println("EXCEPTION während calcRoute: ${e.message}")
+            null
+        }
+
         if (trip != null) {
             println("STATUS: Erfolg")
+            println("START:  lat=${start.lat}, lon=${start.lon}")
+            println("ZIEL:   lat=${stop.lat}, lon=${stop.lon}")
             println("DISTANZ: ${Navigate.totalLengthKM} km")
             println("DAUER: ${Navigate.durationSeconds} Sekunden")
             println("DAUER (min): ${Navigate.durationSeconds / 60}")
-            println("PUNKTE: ${Navigate.routePoints.size}")
-            
-            // Verifikation
+            println("PUNKTE gesamt: ${Navigate.routePoints.size}")
+
+            val sample = Navigate.routePoints
+                .filterIndexed { i, _ -> i % maxOf(1, Navigate.routePoints.size / 10) == 0 }
+                .take(10)
+            println("--- 10 Routenpunkte (gleichmäßig verteilt) ---")
+            sample.forEachIndexed { i, p -> println("  [${i + 1}] lat=${p.latitude}, lon=${p.longitude}") }
+
             assertTrue("Distanz sollte größer als 0 sein", Navigate.totalLengthKM > 0)
             assertTrue("Route sollte Punkte enthalten", Navigate.routePoints.isNotEmpty())
-            
-            // Speed Limit Test
+
             val limit = Navigate.getSpeedLimit(start)
             println("SPEED LIMIT (Startpunkt): ${limit ?: "N/A"} km/h")
         } else {
             println("STATUS: Fehler bei der Routenberechnung")
             fail("Routenberechnung fehlgeschlagen")
         }
-        
+
         println("--- NAVIGATOR TEST ENDE ---")
     }
 }

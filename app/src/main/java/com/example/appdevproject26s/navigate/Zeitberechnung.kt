@@ -30,8 +30,8 @@ object Zeitberechnung {
         if (remainingDist <= 0 || trip == null) return 0.0
         
         // Einfache Schätzung: Verhältnis der Distanz zur ursprünglichen Zeit
-        val totalDist = trip.summary.length
-        val totalTime = trip.summary.time
+        val totalDist = trip.summary.distance
+        val totalTime = trip.summary.duration
         
         return if (totalDist > 0) (remainingDist / totalDist) * totalTime else 0.0
     }

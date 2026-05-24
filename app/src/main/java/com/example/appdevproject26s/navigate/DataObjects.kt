@@ -1,113 +1,225 @@
 package com.example.appdevproject26s.navigate
 
+import org.maplibre.android.geometry.LatLng
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.Query
 
-interface ValhallaApi {
-    @POST("route")
-    suspend fun getRoute(@Body request: ValhallaRequest): Response<ValhallaResponse>
+/**
+ * written by Hans Wornik
+ * Sammlung der Daten und Objekte für Navigate – OpenRouteService
+ */
+
+// ---- API Interface ----
+
+interface OrsApi {
+    @Headers("Accept: application/json")
+    @POST("v2/directions/driving-car")
+    suspend fun getRoute(
+        @Header("Authorization") apiKey: String,
+        @Body request: OrsRequest
+    ): Response<OrsResponse>
 }
 
-object ValhallaClient {
-    private const val BASE_URL = "https://valhalla1.openstreetmap.de/"
+// ---- Client ----
 
-    val api: ValhallaApi = Retrofit.Builder()
+object OrsClient {
+    private const val BASE_URL = "https://api.openrouteservice.org/"
+    const val API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZkYTFlY2Q2N2FiNTQyMTdiMjAyMmZkMDNmNTI0ZTk0IiwiaCI6Im11cm11cjY0In0="
+
+    val api: OrsApi = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-        .create(ValhallaApi::class.java)
+        .create(OrsApi::class.java)
 }
 
-data class ValhallaRequest(
-    val locations: List<VLocation>,
-    val costing: String = "auto",
-    val costing_options: CostingOptions? = null,
-    val directions_options: DirectionsOptions = DirectionsOptions(),
-    val filters: Filters = Filters()
+// ---- Hilfsfunktion ----
+
+fun coordsOf(lon: Double, lat: Double): List<Double> = listOf(lon, lat)
+
+// ---- Request ----
+
+data class OrsRequest(
+    val coordinates: List<List<Double>>,        // [[lon,lat], [lon,lat]]
+    val language: String = "de-de",
+    val units: String = "km",
+    val instructions: Boolean = true,
+    val instructions_format: String = "text",
+    val extra_info: List<String> = listOf("surface", "waytype")
 )
 
-data class VLocation(
-    val lon: Double,
-    val lat: Double,
-    val type: String = "break"   // break = Stopp, through = Durchfahrt
+// ---- Response (JSON-Format, nicht GeoJSON) ----
+
+data class OrsResponse(
+    val bbox: List<Double>,
+    val routes: List<OrsRoute>,
+    val metadata: OrsMetadata?
 )
 
-data class CostingOptions(
-    val auto: AutoOptions? = null,
-    val pedestrian: PedestrianOptions? = null
+data class OrsMetadata(
+    val attribution: String?,
+    val service: String?,
+    val timestamp: Long?,
+    val query: OrsQuery?
 )
 
-data class AutoOptions(
-    val use_highways: Float = 1.0f,   // 0=meiden, 1=bevorzugen
-    val use_tolls: Float = 0.5f,
-    val top_speed: Int = 130          // km/h max
+data class OrsQuery(
+    val coordinates: List<List<Double>>,
+    val profile: String?,
+    val format: String?
 )
 
-data class PedestrianOptions(
-    val walking_speed: Float = 5.0f
+data class OrsRoute(
+    val summary: OrsSummary,
+    val segments: List<OrsSegment>,
+    val bbox: List<Double>,
+    val geometry: String,           // encoded polyline (Precision 5) → decodePolyline()
+    val way_points: List<Int>,      // Indices der Wegpunkte in der Geometrie
+    val extras: OrsExtras?
+) {
+    fun toLatLngList(): List<LatLng> = decodePolyline(geometry)
+}
+
+data class OrsSummary(
+    val distance: Double,           // km
+    val duration: Double            // Sekunden
 )
 
-data class DirectionsOptions(
-    val language: String = "de-DE",
-    val units: String = "kilometers"
+data class OrsSegment(
+    val distance: Double,
+    val duration: Double,
+    val steps: List<OrsStep>
 )
 
-data class Filters(
-    val attributes: List<String> = listOf(
-        "edge.speed",
-        "edge.speed_limit",
-        "edge.surface",
-        "edge.road_class",
-        "node.elapsed_time"
-    ),
-    val action: String = "include"
+data class OrsStep(
+    val distance: Double,
+    val duration: Double,
+    val type: Int,                  // Manöver-Typ (siehe unten)
+    val instruction: String,
+    val name: String,
+    val way_points: List<Int>       // [startIndex, endIndex] in geometry
 )
 
-// ---- Response ----
+// ---- Geometry Decoder (Precision 5 für ORS) ----
 
-data class ValhallaResponse(
-    val trip: Trip
-)
+fun decodePolyline(encoded: String, precision: Int = 5): List<LatLng> {
+    val factor = Math.pow(10.0, precision.toDouble())
+    val result = mutableListOf<LatLng>()
+    var index = 0; var lat = 0; var lng = 0
+
+    while (index < encoded.length) {
+        var b: Int; var shift = 0; var result2 = 0
+        do { b = encoded[index++].code - 63; result2 = result2 or (b and 0x1f shl shift); shift += 5 } while (b >= 0x20)
+        lat += if (result2 and 1 != 0) (result2 shr 1).inv() else result2 shr 1
+
+        shift = 0; result2 = 0
+        do { b = encoded[index++].code - 63; result2 = result2 or (b and 0x1f shl shift); shift += 5 } while (b >= 0x20)
+        lng += if (result2 and 1 != 0) (result2 shr 1).inv() else result2 shr 1
+
+        result.add(LatLng(lat / factor, lng / factor))
+    }
+    return result
+}
+
+// ---- Standort ----
+
+data class VLocation(val lat: Double, val lon: Double)
+
+// ---- Trip (berechnete Route) ----
 
 data class Trip(
-    val legs: List<Leg>,
-    val summary: TripSummary,
-    val status_message: String
+    val summary: OrsSummary,
+    val segments: List<OrsSegment>,
+    val extras: OrsExtras?
 )
 
-data class TripSummary(
-    val length: Double,
-    val time: Double,
-    val min_lat: Double,
-    val min_lon: Double,
-    val max_lat: Double,
-    val max_lon: Double
+// ---- Extras (Geschwindigkeitslimits, Belag, Wegtyp) ----
+
+data class OrsExtras(
+    val speedlimits: OrsExtraData?,
+    val surface: OrsExtraData?,
+    val waytype: OrsExtraData?
 )
 
-data class Leg(
-    val shape: String,
-    val maneuvers: List<Maneuver>,
-    val summary: LegSummary
+data class OrsExtraData(
+    val values: List<List<Int>>,        // [[startIndex, endIndex, value], ...]
+    val summary: List<OrsExtraSummary>
+) {
+    fun speedLimitAt(index: Int): Int? {
+        for (range in values) {
+            if (range.size >= 3 && index >= range[0] && index < range[1]) return range[2]
+        }
+        return null
+    }
+}
+
+data class OrsExtraSummary(
+    val value: Int,
+    val distance: Double,
+    val amount: Double
 )
 
-data class LegSummary(
-    val length: Double,
-    val time: Double
+// ---- Overpass API (Speed Limits via OSM) ----
+
+interface OverpassApi {
+    @GET("api/interpreter")
+    suspend fun query(@Query("data") query: String): Response<OverpassResponse>
+}
+
+object OverpassClient {
+    private const val BASE_URL = "https://overpass-api.de/"
+    val api: OverpassApi = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(OverpassApi::class.java)
+}
+
+data class OverpassResponse(val elements: List<OverpassElement>)
+
+data class OverpassElement(
+    val type: String,
+    val id: Long,
+    val tags: Map<String, String>?
 )
 
-data class Maneuver(
-    val type: Int,
-    val instruction: String,
-    val verbal_pre_transition_instruction: String?,
-    val verbal_transition_alert_instruction: String?,
-    val street_names: List<String>?,
-    val length: Double,
-    val time: Double,
-    val begin_shape_index: Int,
-    val end_shape_index: Int,
-    val speed_limit: Int?,          // km/h – kann null sein
-    val travel_mode: String         // "drive", "pedestrian" etc.
-)
+fun parseMaxspeed(value: String): Int? {
+    val v = value.trim().lowercase()
+    return when {
+        v == "none" || v == "signals" || v == "unlimited" -> null
+        v == "walk" -> 7
+        v.endsWith("mph") -> {
+            val mph = v.removeSuffix("mph").trim().toDoubleOrNull() ?: return null
+            (mph * 1.60934).toInt()
+        }
+        v.matches(Regex("\\d+")) -> v.toInt()
+        v.contains("motorway")                            -> 130
+        v.contains("rural")                               -> 100
+        v.contains("urban")                               -> 50
+        v.contains("living_zone") || v.contains("living zone") -> 10
+        else -> null
+    }
+}
+
+/*
+    ORS Manöver-Typen (step.type):
+     0 = Links abbiegen
+     1 = Rechts abbiegen
+     2 = Scharf links
+     3 = Scharf rechts
+     4 = Leicht links
+     5 = Leicht rechts
+     6 = Geradeaus
+     7 = Einbiegen (roundabout)
+     8 = U-Turn
+    10 = Ziel erreicht
+    11 = Start
+    12 = Kreisverkehr verlassen
+*/
