@@ -1,3 +1,7 @@
+/*
+*                    Written by Hans Wornik
+*           Implementation of the Navigate Interface
+ */
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
@@ -5,10 +9,7 @@ import com.google.gson.Gson
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.spatialk.geojson.Position
 import com.example.appdevproject26s.INavigate
-/*
-*                    Written by Hans Wornik
-*           Implementation of the Navigate Interface
- */
+
 import android.util.Log
 
 object Navigate : INavigate{

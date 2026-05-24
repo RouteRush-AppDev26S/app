@@ -1,3 +1,7 @@
+/*
+*                    Written by Hans Wornik
+*           Implementation of the Navigate Test
+ */
 package com.example.appdevproject26s
 
 import androidx.test.platform.app.InstrumentationRegistry
@@ -25,7 +29,7 @@ class NavigatorTest {
         val stop  = VLocation(lat =  47.073863, lon = 15.415192)
 
         println("--- NAVIGATOR TEST START ---")
-        println("Route: Klagenfurt -> Villach")
+        println("Route: Villach -> Graz")
 
         val trip = try {
             Navigate.calcRoute(start, stop, "auto")

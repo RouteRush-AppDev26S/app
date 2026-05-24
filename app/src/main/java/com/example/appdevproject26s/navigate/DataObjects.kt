@@ -200,7 +200,10 @@ object OverpassClient {
         }
     }
 }
-
+/*
+*                    Written by Hans Wornik
+*           Implementation of the DataObjects
+ */
 data class OverpassResponse(val elements: List<OverpassElement>)
 
 data class OverpassElement(

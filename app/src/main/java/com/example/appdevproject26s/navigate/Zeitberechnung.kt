@@ -1,3 +1,7 @@
+/*
+*                    Written by Hans Wornik
+*           Implementation of the TimeManagnment
+ */
 package com.example.appdevproject26s.navigate
 
 import org.maplibre.spatialk.geojson.Position
