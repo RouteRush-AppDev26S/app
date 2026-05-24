@@ -22,7 +22,7 @@ class NavigatorTest {
     @Test
     fun testNavigatorOutput(): Unit = runBlocking {
         val start = VLocation(lat = 46.6247, lon = 14.3053)
-        val stop  = VLocation(lat = 46.6103, lon = 13.8558)
+        val stop  = VLocation(lat =  47.073863, lon = 15.415192)
 
         println("--- NAVIGATOR TEST START ---")
         println("Route: Klagenfurt -> Villach")

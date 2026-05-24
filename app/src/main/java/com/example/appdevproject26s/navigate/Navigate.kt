@@ -1,6 +1,7 @@
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
+import com.google.gson.Gson
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.spatialk.geojson.Position
 import com.example.appdevproject26s.INavigate
@@ -100,48 +101,77 @@ object Navigate : INavigate{
     suspend fun deleteRouteFromHistory(routeId: Int) { db?.deleteRouteById(routeId) }
 
     override suspend fun getSpeedLimit(now: VLocation): Int? {
-        val query = "[out:json];way(around:50,${now.lat},${now.lon})[highway];out tags;"
-        Log.d(TAG, "Overpass query: $query")
-        return try {
-            val response = OverpassClient.api.query(query)
-            Log.d(TAG, "Overpass HTTP ${response.code()}")
-            if (response.isSuccessful) {
-                val elements = response.body()?.elements ?: run {
-                    Log.e(TAG, "Overpass body null")
-                    return null
-                }
-                Log.d(TAG, "Overpass elements: ${elements.size}")
-                elements.forEach { el ->
-                    Log.d(TAG, "  way ${el.id}: highway=${el.tags?.get("highway")} maxspeed=${el.tags?.get("maxspeed")}")
-                }
-                val explicit = elements
-                    .mapNotNull { it.tags?.get("maxspeed") }
-                    .firstNotNullOfOrNull { parseMaxspeed(it) }
-                val hw = elements.firstNotNullOfOrNull { it.tags?.get("highway") }
-                val result = explicit ?: defaultSpeedForHighway(hw)
-                Log.d(TAG, "SpeedLimit result: $result (explicit=$explicit, highway=$hw)")
-                result
-            } else {
-                Log.e(TAG, "Overpass Error: ${response.code()} body=${response.errorBody()?.string()}")
-                null
+        // 1. Erst in der aktuellen Route suchen (falls vorhanden)
+        val trip = currentTrip
+        if (trip != null && routePoints.isNotEmpty()) {
+            val closestIndex = Zeitberechnung.findClosestShapeIndex(Position(now.lon, now.lat), routePoints)
+            val limit = trip.extras?.speedlimits?.speedLimitAt(closestIndex)
+            if (limit != null) {
+                Log.d(TAG, "SpeedLimit from Trip: $limit")
+                return limit
             }
+        }
+
+        // 2. Fallback auf Overpass API
+        val query = "[out:json];way(around:100,${now.lat},${now.lon})[highway];out tags;"
+        println("Overpass query: $query")
+        val json = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            OverpassClient.query(query)
+        } ?: return null
+        println("Overpass raw: ${json.take(300)}")
+        return try {
+            val parsed = Gson().fromJson(json, OverpassResponse::class.java)
+            val elements = parsed.elements
+            println("Overpass elements: ${elements.size}")
+            if (elements.isEmpty()) {
+                println("Overpass 0 elements – kein Weg in 100m Radius?")
+                return null
+            }
+            elements.forEach { el ->
+                println("  way ${el.id}: highway=${el.tags?.get("highway")} maxspeed=${el.tags?.get("maxspeed")}")
+            }
+            val (hw, explicit) = pickBestHighway(elements)
+            println("pickBestHighway -> hw=$hw explicit=$explicit")
+            val result = explicit ?: defaultSpeedForHighway(hw)
+            println("SpeedLimit result: $result")
+            result
         } catch (e: Exception) {
-            Log.e(TAG, "Overpass Exception: ${e.message}", e)
+            println("Overpass parse Exception: ${e.javaClass.simpleName} ${e.message}")
             null
         }
     }
 
-    private fun defaultSpeedForHighway(highway: String?): Int? = when (highway) {
-        "motorway"                    -> 130
-        "trunk"                       -> 100
-        "primary", "secondary"        -> 100
-        "tertiary"                    -> 70
-        "unclassified", "residential" -> 50
-        "living_street"               -> 7
-        "service"                     -> 10
-        else                          -> null
+    private fun defaultSpeedForHighway(hw: String?): Int? = when (hw) {
+        "motorway"       -> 130
+        "trunk"          -> 100
+        "primary"        -> 100
+        "secondary"      -> 100
+        "tertiary"       -> 80
+        "unclassified"   -> 50
+        "residential"    -> 30
+        "living_street"  -> 7
+        "service"        -> 10
+        "track"          -> 10   // Feldweg
+        "path",
+        "footway",
+        "cycleway",
+        "bridleway"      -> null  // kein Kfz-Verkehr
+        else             -> null
     }
-
+    private fun pickBestHighway(elements: List<OverpassElement>): Pair<String?, Int?> {
+        val priority = listOf(
+            "motorway", "trunk", "primary", "secondary", "tertiary",
+            "unclassified", "residential", "living_street", "service",
+            "track", "path", "footway", "cycleway", "bridleway"
+        )
+        val sorted = elements.sortedBy { el ->
+            priority.indexOf(el.tags?.get("highway") ?: "").let { if (it == -1) Int.MAX_VALUE else it }
+        }
+        val explicit = sorted.mapNotNull { it.tags?.get("maxspeed") }
+            .firstNotNullOfOrNull { parseMaxspeed(it) }
+        val hw = sorted.firstNotNullOfOrNull { it.tags?.get("highway") }
+        return hw to explicit
+    }
     override fun stopRoute() {
         currentTrip = null
         routePoints = emptyList()

@@ -1,5 +1,8 @@
 package com.example.appdevproject26s.navigate
 
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.maplibre.android.geometry.LatLng
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -168,18 +171,34 @@ data class OrsExtraSummary(
 
 // ---- Overpass API (Speed Limits via OSM) ----
 
-interface OverpassApi {
-    @GET("api/interpreter")
-    suspend fun query(@Query("data") query: String): Response<OverpassResponse>
-}
-
 object OverpassClient {
-    private const val BASE_URL = "https://overpass-api.de/"
-    val api: OverpassApi = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(OverpassApi::class.java)
+    private const val URL = "https://lz4.overpass-api.de/api/interpreter"
+
+    private val client = OkHttpClient()
+
+    fun query(overpassQuery: String): String? {
+        val body = FormBody.Builder()
+            .add("data", overpassQuery)
+            .build()
+        val request = Request.Builder()
+            .url(URL)
+            .addHeader("User-Agent", "AppDevProject26S/1.0")
+            .post(body)
+            .build()
+        return try {
+            client.newCall(request).execute().use { resp ->
+                println("Overpass raw HTTP ${resp.code}")
+                if (resp.isSuccessful) resp.body?.string() else {
+                    val err = resp.body?.string()
+                    println("Overpass error body: ${err?.take(300)}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            println("Overpass OkHttp Exception: ${e.javaClass.simpleName} ${e.message}")
+            null
+        }
+    }
 }
 
 data class OverpassResponse(val elements: List<OverpassElement>)
