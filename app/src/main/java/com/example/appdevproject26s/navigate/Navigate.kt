@@ -19,6 +19,9 @@ object Navigate : INavigate{
 
     var currentTrip: Trip? = null
         private set
+    private var ziel: VLocation?= null
+
+    private var geraet: String?=null
 
     override var routePoints: List<Position> = emptyList()
         private set
@@ -37,9 +40,19 @@ object Navigate : INavigate{
         val request = OrsRequest(
             coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat))
         )
+        ziel = stop   
+        geraet = vehicle
+        
+        // ORS profile mapping (Valhalla uses auto/pedestrian/bicycle, ORS uses driving-car/foot-walking etc.)
+        val profile = when (vehicle) {
+            "auto", "driving-car" -> "driving-car"
+            "pedestrian", "foot-walking" -> "foot-walking"
+            "bicycle", "cycling-regular" -> "cycling-regular"
+            else -> "driving-car"
+        }
 
         val response = try {
-            OrsClient.api.getRoute(OrsClient.API_KEY, request)
+            OrsClient.api.getRoute(OrsClient.API_KEY, profile, request)
         } catch (e: Exception) {
             Log.e(TAG, "ORS API Exception: ${e.message}", e)
             null
@@ -142,6 +155,43 @@ object Navigate : INavigate{
         }
     }
 
+    override suspend fun calcRemainingTimeFromServer(now: VLocation): Pair<Double, Long>? {
+        val target = ziel ?: return null
+        
+        val request = OrsMatrixRequest(
+            locations = listOf(listOf(now.lon, now.lat), listOf(target.lon, target.lat))
+        )
+
+        val profile = when (geraet) {
+            "auto", "driving-car" -> "driving-car"
+            "pedestrian", "foot-walking" -> "foot-walking"
+            "bicycle", "cycling-regular" -> "cycling-regular"
+            else -> "driving-car"
+        }
+
+        val response = try {
+            OrsClient.api.getMatrix(OrsClient.API_KEY, profile, request)
+        } catch (e: Exception) {
+            Log.e(TAG, "ORS Matrix API Exception: ${e.message}", e)
+            null
+        }
+
+        if (response == null || !response.isSuccessful) {
+            Log.e(TAG, "ORS Matrix API Error: ${response?.code()} ${response?.message()}")
+            return null
+        }
+
+        val body = response.body()
+        val dist = body?.distances?.get(0)?.get(1) // Von 0 zu 1
+        val dur = body?.durations?.get(0)?.get(1)
+
+        return if (dist != null && dur != null) {
+            dist to dur.toLong()
+        } else {
+            null
+        }
+    }
+
     private fun defaultSpeedForHighway(hw: String?): Int? = when (hw) {
         "motorway"       -> 130
         "trunk"          -> 100
@@ -169,7 +219,7 @@ object Navigate : INavigate{
             priority.indexOf(el.tags?.get("highway") ?: "").let { if (it == -1) Int.MAX_VALUE else it }
         }
         val explicit = sorted.mapNotNull { it.tags?.get("maxspeed") }
-            .firstNotNullOfOrNull { parseMaxspeed(it) }
+            .firstNotNullOfOrNull { defaultSpeedForHighway(it) }
         val hw = sorted.firstNotNullOfOrNull { it.tags?.get("highway") }
         return hw to explicit
     }

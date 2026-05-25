@@ -37,6 +37,12 @@ interface INavigate
     suspend fun getSpeedLimit(now: VLocation): Int?
     
     /**
+     * Schätzt die verbleibende Zeit und Distanz zum aktuellen Ziel über die Server Matrix API
+     * @return Pair(Distanz_in_KM, Dauer_in_Sekunden)
+     */
+    suspend fun calcRemainingTimeFromServer(now: VLocation ): Pair<Double, Long>?
+
+    /**
      * Route beenden
      */
     fun stopRoute()

@@ -58,6 +58,17 @@ class NavigatorTest {
 
             val limit = Navigate.getSpeedLimit(start)
             println("SPEED LIMIT (Startpunkt): ${limit ?: "N/A"} km/h")
+
+            // Test Matrix API (Reine Zeitabfrage)
+            println("--- Matrix API Test ---")
+            val matrixResult = Navigate.calcRemainingTimeFromServer(start)
+            if (matrixResult != null) {
+                println("Matrix DISTANZ: ${matrixResult.first} km")
+                println("Matrix DAUER: ${matrixResult.second} Sekunden")
+                assertTrue("Matrix Distanz sollte > 0 sein", matrixResult.first > 0)
+            } else {
+                println("Matrix API fehlgeschlagen")
+            }
         } else {
             println("STATUS: Fehler bei der Routenberechnung")
             fail("Routenberechnung fehlgeschlagen")

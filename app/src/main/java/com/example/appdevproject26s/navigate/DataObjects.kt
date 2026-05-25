@@ -12,6 +12,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
@@ -23,11 +24,20 @@ import retrofit2.http.Query
 
 interface OrsApi {
     @Headers("Accept: application/json")
-    @POST("v2/directions/driving-car")
+    @POST("v2/directions/{profile}")
     suspend fun getRoute(
         @Header("Authorization") apiKey: String,
+        @Path("profile") profile: String,
         @Body request: OrsRequest
     ): Response<OrsResponse>
+
+    @Headers("Accept: application/json")
+    @POST("v2/matrix/{profile}")
+    suspend fun getMatrix(
+        @Header("Authorization") apiKey: String,
+        @Path("profile") profile: String,
+        @Body request: OrsMatrixRequest
+    ): Response<OrsMatrixResponse>
 }
 
 // ---- Client ----
@@ -56,6 +66,12 @@ data class OrsRequest(
     val instructions: Boolean = true,
     val instructions_format: String = "text",
     val extra_info: List<String> = listOf("surface", "waytype")
+)
+
+data class OrsMatrixRequest(
+    val locations: List<List<Double>>,          // [[lon,lat], [lon,lat]]
+    val metrics: List<String> = listOf("distance", "duration"),
+    val units: String = "km"
 )
 
 // ---- Response (JSON-Format, nicht GeoJSON) ----
@@ -169,6 +185,14 @@ data class OrsExtraSummary(
     val amount: Double
 )
 
+// ---- Matrix Response ----
+
+data class OrsMatrixResponse(
+    val distances: List<List<Double>>?,         // [from][to]
+    val durations: List<List<Double>>?,          // [from][to]
+    val metadata: OrsMetadata?
+)
+
 // ---- Overpass API (Speed Limits via OSM) ----
 
 object OverpassClient {
@@ -211,24 +235,6 @@ data class OverpassElement(
     val id: Long,
     val tags: Map<String, String>?
 )
-
-fun parseMaxspeed(value: String): Int? {
-    val v = value.trim().lowercase()
-    return when {
-        v == "none" || v == "signals" || v == "unlimited" -> null
-        v == "walk" -> 7
-        v.endsWith("mph") -> {
-            val mph = v.removeSuffix("mph").trim().toDoubleOrNull() ?: return null
-            (mph * 1.60934).toInt()
-        }
-        v.matches(Regex("\\d+")) -> v.toInt()
-        v.contains("motorway")                            -> 130
-        v.contains("rural")                               -> 100
-        v.contains("urban")                               -> 50
-        v.contains("living_zone") || v.contains("living zone") -> 10
-        else -> null
-    }
-}
 
 /*
     ORS Manöver-Typen (step.type):
