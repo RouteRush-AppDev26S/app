@@ -65,13 +65,19 @@ data class OrsRequest(
     val units: String = "km",
     val instructions: Boolean = true,
     val instructions_format: String = "text",
-    val extra_info: List<String> = listOf("surface", "waytype")
+    val extra_info: List<String> = listOf("surface", "waytype"),
+    val options: OrsOptions? = null
 )
 
 data class OrsMatrixRequest(
     val locations: List<List<Double>>,          // [[lon,lat], [lon,lat]]
     val metrics: List<String> = listOf("distance", "duration"),
-    val units: String = "km"
+    val units: String = "km",
+    val options: OrsOptions? = null
+)
+
+data class OrsOptions(
+    val avoid_features: List<String>? = null
 )
 
 // ---- Response (JSON-Format, nicht GeoJSON) ----
@@ -235,6 +241,24 @@ data class OverpassElement(
     val id: Long,
     val tags: Map<String, String>?
 )
+
+fun parseMaxspeed(value: String): Int? {
+    val v = value.trim().lowercase()
+    return when {
+        v == "none" || v == "signals" || v == "unlimited" -> null
+        v == "walk" -> 7
+        v.endsWith("mph") -> {
+            val mph = v.removeSuffix("mph").trim().toDoubleOrNull() ?: return null
+            (mph * 1.60934).toInt()
+        }
+        v.matches(Regex("\\d+")) -> v.toInt()
+        v.contains("motorway") -> 130
+        v.contains("rural") -> 100
+        v.contains("urban") -> 50
+        v.contains("living_zone") || v.contains("living zone") -> 10
+        else -> null
+    }
+}
 
 /*
     ORS Manöver-Typen (step.type):

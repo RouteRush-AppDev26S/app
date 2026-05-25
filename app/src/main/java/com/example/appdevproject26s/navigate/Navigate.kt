@@ -16,6 +16,9 @@ object Navigate : INavigate{
     private const val TAG = "Navigate"
 
     private var db: RouteDao? = null
+    
+    override var noMaut: Boolean = false
+    override var noHighway: Boolean = false
 
     var currentTrip: Trip? = null
         private set
@@ -37,8 +40,14 @@ object Navigate : INavigate{
     }
 
     override suspend fun calcRoute(start: VLocation, stop: VLocation, vehicle: String): Trip? {
+        val avoids = mutableListOf<String>()
+        if (noMaut) avoids.add("tollways")
+        if (noHighway) avoids.add("highways")
+        val orsOptions = if (avoids.isNotEmpty()) OrsOptions(avoid_features = avoids) else null
+
         val request = OrsRequest(
-            coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat))
+            coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat)),
+            options = orsOptions
         )
         ziel = stop   
         geraet = vehicle
@@ -158,8 +167,14 @@ object Navigate : INavigate{
     override suspend fun calcRemainingTimeFromServer(now: VLocation): Pair<Double, Long>? {
         val target = ziel ?: return null
         
+        val avoids = mutableListOf<String>()
+        if (noMaut) avoids.add("tollways")
+        if (noHighway) avoids.add("highways")
+        val orsOptions = if (avoids.isNotEmpty()) OrsOptions(avoid_features = avoids) else null
+
         val request = OrsMatrixRequest(
-            locations = listOf(listOf(now.lon, now.lat), listOf(target.lon, target.lat))
+            locations = listOf(listOf(now.lon, now.lat), listOf(target.lon, target.lat)),
+            options = orsOptions
         )
 
         val profile = when (geraet) {
@@ -219,7 +234,7 @@ object Navigate : INavigate{
             priority.indexOf(el.tags?.get("highway") ?: "").let { if (it == -1) Int.MAX_VALUE else it }
         }
         val explicit = sorted.mapNotNull { it.tags?.get("maxspeed") }
-            .firstNotNullOfOrNull { defaultSpeedForHighway(it) }
+            .firstNotNullOfOrNull { parseMaxspeed(it) }
         val hw = sorted.firstNotNullOfOrNull { it.tags?.get("highway") }
         return hw to explicit
     }
@@ -228,5 +243,7 @@ object Navigate : INavigate{
         routePoints = emptyList()
         totalLengthKM = 0.0
         durationSeconds = 0
+        ziel = null
+        geraet = null
     }
 }
