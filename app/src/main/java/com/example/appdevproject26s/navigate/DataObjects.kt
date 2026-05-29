@@ -260,18 +260,23 @@ fun parseMaxspeed(value: String): Int? {
     }
 }
 
-/*
-    ORS Manöver-Typen (step.type):
-     0 = Links abbiegen
-     1 = Rechts abbiegen
-     2 = Scharf links
-     3 = Scharf rechts
-     4 = Leicht links
-     5 = Leicht rechts
-     6 = Geradeaus
-     7 = Einbiegen (roundabout)
-     8 = U-Turn
-    10 = Ziel erreicht
-    11 = Start
-    12 = Kreisverkehr verlassen
-*/
+val maneuversde = mapOf(
+    0 to "links abbiegen",
+    1 to "rechts abbiegen",
+    2 to "scharf links abbiegen",
+    3 to "scharf rechts abbiegen",
+    4 to "leicht links abbiegen",
+    5 to "leicht rechts abbiegen",
+    6 to "geradeaus fahren",
+    7 to "in den Kreisverkehr einfahren",
+    8 to "wenden (U-Turn)",
+    10 to "Ziel erreicht",
+    11 to "Start",
+    12 to "Kreisverkehr verlassen"
+)
+
+data class InstructionsNavigate(
+    var manoever: String,
+    var distance: Double,
+    var todrivekm: Double
+)

@@ -5,12 +5,15 @@
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
+import android.os.Build
 import com.google.gson.Gson
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.spatialk.geojson.Position
 import com.example.appdevproject26s.INavigate
 
 import android.util.Log
+import androidx.annotation.RequiresApi
+import com.example.appdevproject26s.navigate.maneuversde
 
 object Navigate : INavigate{
     private const val TAG = "Navigate"
@@ -26,6 +29,7 @@ object Navigate : INavigate{
 
     private var geraet: String?=null
 
+    override var manoevertext: ArrayList<InstructionsNavigate> = ArrayList<InstructionsNavigate>()
     override var routePoints: List<Position> = emptyList()
         private set
 
@@ -105,7 +109,7 @@ object Navigate : INavigate{
                 routePointsJson = RouteConverter.pointsToJson(routePoints)
             )
         )
-
+        showChangeDirection();
         return trip
     }
 
@@ -245,5 +249,58 @@ object Navigate : INavigate{
         durationSeconds = 0
         ziel = null
         geraet = null
+    }
+
+    fun showChangeDirection() {
+        try {
+            val newList = ArrayList<InstructionsNavigate>()
+            var remainingDist: Double = currentTrip?.summary?.distance ?: 0.0
+            
+            currentTrip?.segments?.forEach { segment ->
+                segment.steps.forEach { step ->
+                    val anweisung = maneuversde[step.type] ?: "unbekannt"
+
+                            val schritt = InstructionsNavigate(
+                                manoever = "In ${step.distance} km $anweisung",
+                                distance = step.distance,
+                                todrivekm = remainingDist
+                            )
+                            newList.add(schritt)
+                            remainingDist -= step.distance
+                        }
+            }
+            manoevertext = newList
+            Log.d(TAG, "Manoevertext generiert: ${manoevertext.size} Einträge")
+        } catch (e: Exception) {
+            Log.e(TAG, "Fehler in showChangeDirection: ${e.message}", e)
+        }
+    }
+
+    override suspend fun showOnlyLeftInstruct(pos: VLocation): ArrayList<InstructionsNavigate> {
+        val retmanlist = ArrayList<InstructionsNavigate>()
+        val dist = calcRemainingTimeFromServer(pos) ?: return retmanlist
+        
+        val currentRemainingDist = dist.first
+        
+        manoevertext.forEach { instr ->
+            // Nur Anweisungen nehmen, die noch "vor" uns liegen (todrivekm > currentRemainingDist ist falsch rum)
+            // todrivekm ist die Distanz vom Start bis zu diesem Punkt? 
+            // Nein, oben habe ich es als "Restdistanz ab diesem Punkt" definiert.
+            // Also: Wenn todrivekm < currentRemainingDist, dann haben wir den Punkt schon passiert.
+            if (instr.todrivekm <= currentRemainingDist) {
+                retmanlist.add(instr)
+            }
+        }
+        
+        if (retmanlist.isNotEmpty()) {
+            val nextManeuver = retmanlist[0]
+            // Korrektur der Distanz zum nächsten Manöver
+            // Das nächste Manöver ist bei 'nextManeuver.todrivekm'
+            // Wir sind bei 'currentRemainingDist'
+            val distToNext = currentRemainingDist - (nextManeuver.todrivekm - nextManeuver.distance)
+            nextManeuver.distance = if (distToNext > 0) distToNext else 0.0
+        }
+
+        return retmanlist
     }
 }

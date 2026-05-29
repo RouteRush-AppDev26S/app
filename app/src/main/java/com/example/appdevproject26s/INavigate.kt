@@ -58,4 +58,23 @@ interface INavigate
      * Route beenden
      */
     fun stopRoute()
+
+    /**
+     * TextAusgabe der NavigationsAnweisungen
+     * im Format
+     * manoevertext.todrive restdistanz
+     * manoevertext.distance abstand des Segment zum nächsten
+     * manoevertext.todrivekm zurückzulegende kilometer bei Segment
+     */
+    var manoevertext: ArrayList<InstructionsNavigate>
+    /**
+     * TextAusgabe der NavigationsAnweisungen ab aktueller Position
+     * im Format
+     * manoevertext.todrive restdistanz
+     * manoevertext.distance abstand des Segmentes zum nächsten
+     * manoevertext.todrivekm zurückzulegende kilometer bei Segment
+     *
+     *  Bei first Element in distance der aktuelle Abstand zum nächsten NavPunkt
+     */
+    suspend fun showOnlyLeftInstruct(pos : VLocation) : ArrayList<InstructionsNavigate>
 }
