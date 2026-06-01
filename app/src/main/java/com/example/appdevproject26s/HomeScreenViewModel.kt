@@ -1,6 +1,8 @@
 package com.example.appdevproject26s
 
+import android.util.Log
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.unit.DpOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -37,8 +39,14 @@ class HomeScreenViewModel(private val repository: MapSettingsRepository) : ViewM
         }
     }
 
-    fun onMapTap() {
+    fun onMapTap(point: Position, screePoint: DpOffset) {
         _fullscreen.value = !_fullscreen.value
+    }
+
+    fun onMapPress(point: Position, screenPoint: DpOffset) {
+        // use point's coords for to begin navigation open menu/slider for options like navigate to/naviagate from
+        Log.d("MAP_PRESS", "Clicked at Lat: ${point.latitude}, Lng: ${point.longitude}")
+        Log.d("MAP_PRESS", "Screen pixels - X: ${screenPoint.x}, Y: ${screenPoint.y}")
     }
 
     companion object {

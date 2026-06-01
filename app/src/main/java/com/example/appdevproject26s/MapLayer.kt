@@ -73,8 +73,12 @@ fun MapLayer(
             // 3. Click Interaction
             onMapClick = { point, screenPoint ->
                 // Return Pass to allow the event to propagate to other layers
-                homeViewModel.onMapTap()
+                homeViewModel.onMapTap(point, screenPoint)
                 ClickResult.Pass
+            },
+            onMapLongClick = { point, screenPoint ->
+                homeViewModel.onMapPress(point, screenPoint)
+                ClickResult.Consume
             },
             // 4. Map Options (UI and Gestures)
             options =
