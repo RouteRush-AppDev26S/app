@@ -43,7 +43,11 @@ object Zeitberechnung {
     /**
      * Prüft, ob der Nutzer Off-Route ist.
      */
-    fun isOffRoute(now: VLocation, routePoints: List<Position>, thresholdMeters: Double = 50.0): Boolean {
+    fun isOffRoute(
+        now: VLocation,
+        routePoints: List<Position>,
+        thresholdMeters: Double = 50.0
+    ): Boolean {
         if (routePoints.isEmpty()) return false
         val currentPos = Position(now.lon, now.lat)
         
@@ -53,6 +57,7 @@ object Zeitberechnung {
             if (dist < minDistance) minDistance = dist
         }
         return minDistance > thresholdMeters
+
     }
 
     /**

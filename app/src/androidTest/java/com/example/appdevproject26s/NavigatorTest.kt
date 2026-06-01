@@ -4,9 +4,12 @@
  */
 package com.example.appdevproject26s
 
+import androidx.compose.remote.creation.dsl.second
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.appdevproject26s.navigate.Navigate
+import com.example.appdevproject26s.navigate.Navigate.manoevertext
+import com.example.appdevproject26s.navigate.Navigate.speedLimit
 import com.example.appdevproject26s.navigate.VLocation
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -57,16 +60,16 @@ class NavigatorTest {
             assertTrue("Distanz sollte größer als 0 sein", Navigate.totalLengthKM > 0)
             assertTrue("Route sollte Punkte enthalten", Navigate.routePoints.isNotEmpty())
 
-            val limit = Navigate.getSpeedLimit(start)
-            println("SPEED LIMIT (Startpunkt): ${limit ?: "N/A"} km/h")
+            Navigate.getSpeedLimit(start)
+            println("SPEED LIMIT (Startpunkt): ${speedLimit ?: "N/A"} km/h")
 
             // Test Matrix API (Reine Zeitabfrage)
             println("--- Matrix API Test ---")
-            val matrixResult = Navigate.calcRemainingTimeFromServer(start)
-            if (matrixResult != null) {
-                println("Matrix DISTANZ: ${matrixResult.first} km")
-                println("Matrix DAUER: ${matrixResult.second} Sekunden")
-                assertTrue("Matrix Distanz sollte > 0 sein", matrixResult.first > 0)
+            Navigate.calcRemainingTimeFromServer(start)
+            if (manoevertext != null) {
+                println("Matrix DISTANZ: ${Navigate.totalLengthKM} km")
+                println("Matrix DAUER: ${Navigate.durationSeconds} Sekunden")
+                assertTrue("Matrix Distanz sollte > 0 sein", Navigate.totalLengthKM> 0.0)
             } else {
                 println("Matrix API fehlgeschlagen")
             }

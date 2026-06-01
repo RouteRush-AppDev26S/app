@@ -25,7 +25,7 @@ import retrofit2.http.Query
 interface OrsApi {
     @Headers("Accept: application/json")
     @POST("v2/directions/{profile}")
-    suspend fun getRoute(
+    fun getRoute(
         @Header("Authorization") apiKey: String,
         @Path("profile") profile: String,
         @Body request: OrsRequest
