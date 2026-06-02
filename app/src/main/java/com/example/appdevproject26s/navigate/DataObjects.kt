@@ -311,10 +311,13 @@ val maneuversde = mapOf(
     5 to "leicht rechts abbiegen",
     6 to "geradeaus fahren",
     7 to "in den Kreisverkehr einfahren",
-    8 to "wenden (U-Turn)",
+    8 to "Kreisverkehr verlassen",
+    9 to "wenden (U-Turn)",
     10 to "Ziel erreicht",
     11 to "Start",
-    12 to "Kreisverkehr verlassen"
+    12 to "links halten",
+    13 to "rechts halten",
+    14 to "unbekannt"
 )
 
 data class InstructionsNavigate(
