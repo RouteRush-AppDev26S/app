@@ -1,5 +1,6 @@
 package com.example.appdevproject26s.navigate
 
+import com.google.gson.annotations.SerializedName
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,17 +16,18 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+
 /**
  * written by Hans Wornik
  * Sammlung der Daten und Objekte für Navigate – OpenRouteService
  */
 
 // ---- API Interface ----
-
+const val API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZkYTFlY2Q2N2FiNTQyMTdiMjAyMmZkMDNmNTI0ZTk0IiwiaCI6Im11cm11cjY0In0="
 interface OrsApi {
     @Headers("Accept: application/json")
     @POST("v2/directions/{profile}")
-    fun getRoute(
+    suspend fun getRoute(
         @Header("Authorization") apiKey: String,
         @Path("profile") profile: String,
         @Body request: OrsRequest
@@ -38,16 +40,56 @@ interface OrsApi {
         @Path("profile") profile: String,
         @Body request: OrsMatrixRequest
     ): Response<OrsMatrixResponse>
-}
 
+
+    @GET("geocode/reverse")
+    suspend fun reverseGeocode(
+        @Query("api_key") apiKey: String,
+        @Query("point.lon") longitude: Double,
+        @Query("point.lat") latitude: Double,
+        @Query("size") size: Int = 1 // Wir wollen nur das exakteste Ergebnis
+    ): OrsAddressResponse
+
+    @GET("geocode/search")
+    suspend fun geocode(
+        @Query("api_key") apiKey: String,
+        @Query("text") text: String,
+        @Query("size") size: Int = 1
+    ): OrsAddressResponse
+
+
+
+}
+data class OrsAddressResponseAdr(
+    @SerializedName("features") val features: List<OrsFeature>
+)
+
+data class OrsFeatureAdr(
+    @SerializedName("properties") val properties: OrsProperties
+)
+
+data class OrsPropertiesAdr(
+    @SerializedName("label") val label: String?,
+    @SerializedName("street") val street: String?,
+    @SerializedName("housenumber") val housenumber: String?,
+    @SerializedName("locality") val locality: String?,
+    @SerializedName("postalcode") val postalcode: String?
+)
 // ---- Client ----
 
 object OrsClient {
     private const val BASE_URL = "https://api.openrouteservice.org/"
-    const val API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZkYTFlY2Q2N2FiNTQyMTdiMjAyMmZkMDNmNTI0ZTk0IiwiaCI6Im11cm11cjY0In0="
 
     val api: OrsApi = Retrofit.Builder()
         .baseUrl(BASE_URL)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(OrsApi::class.java)
+
+}
+object OrsClientAd {
+    val apiAd: OrsApi = Retrofit.Builder()
+        .baseUrl("https://api.openrouteservice.org/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(OrsApi::class.java)
@@ -155,7 +197,7 @@ fun decodePolyline(encoded: String, precision: Int = 5): List<LatLng> {
 
 // ---- Standort ----
 
-data class VLocation(val lat: Double, val lon: Double)
+data class Location(var lat: Double, var lon: Double)
 
 // ---- Trip (berechnete Route) ----
 
@@ -278,5 +320,28 @@ val maneuversde = mapOf(
 data class InstructionsNavigate(
     var manoever: String,
     var distance: Double,
-    var todrivekm: Double
+    var todrivekm: Double,
+    var adresse: String
+)
+//-----------------------
+data class OrsAddressResponse(
+    val features: List<OrsFeature>
+)
+
+data class OrsFeature(
+    val geometry: OrsGeometry?,
+    val properties: OrsProperties
+)
+
+data class OrsGeometry(
+    val coordinates: List<Double> // [lon, lat]
+)
+
+// Hier stecken deine gewünschten Adressdaten drin
+data class OrsProperties(
+    val label: String?,
+    val street: String?,
+    val housenumber: String?,
+    val locality: String?, // Ort / Stadt
+    val postalcode: String?
 )

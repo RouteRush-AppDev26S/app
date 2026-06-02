@@ -11,18 +11,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.appdevproject26s.navigate.Navigate
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.layers.CircleLayer
+import org.maplibre.compose.layers.LineLayer
 import org.maplibre.compose.map.GestureOptions
 import org.maplibre.compose.map.MapOptions
 import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.style.rememberStyleState
 import org.maplibre.compose.util.ClickResult
+import org.maplibre.spatialk.geojson.LineString
+import org.maplibre.spatialk.geojson.MultiPoint
 
 @Composable
 fun MapLayer(
@@ -95,7 +104,43 @@ fun MapLayer(
                         ),
                 ),
         ) {
+            val routePoints = Navigate.routePoints
+            
+            // Verhindert Absturz, wenn noch keine Route vorhanden ist
+            val routeSource = rememberGeoJsonSource(
+                data = if (routePoints.size >= 2) {
+                    GeoJsonData.Features(LineString(routePoints))
+                } else {
+                    GeoJsonData.Features(MultiPoint(emptyList()))
+                }
+            )
+
+            val pointsSource = rememberGeoJsonSource(
+                data = GeoJsonData.Features(
+                    MultiPoint(
+                        buildList {
+                            routePoints.firstOrNull()?.let { add(it) }
+                            routePoints.lastOrNull()?.let { add(it) }
+                        }
+                    )
+                )
+            )
+
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
+            if (routePoints.isNotEmpty()) {
+                LineLayer(
+                    id = "route-layer",
+                    source = routeSource,
+                    color = const(Color.Blue),
+                    width = const(5.dp)
+                )
+                CircleLayer(
+                    id = "route-points",
+                    source = pointsSource,
+                    color = const(Color.Red),
+                    radius = const(6.dp)
+                )
+            }
         }
         if (!homeViewModel.fullscreen.collectAsState().value) {
             IconLayer(
@@ -109,4 +154,3 @@ fun MapLayer(
         }
     }
 }
-

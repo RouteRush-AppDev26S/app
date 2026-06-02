@@ -10,7 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.appdevproject26s.navigate.Navigate
 import com.example.appdevproject26s.navigate.Navigate.manoevertext
 import com.example.appdevproject26s.navigate.Navigate.speedLimit
-import com.example.appdevproject26s.navigate.VLocation
+import com.example.appdevproject26s.navigate.Location
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
@@ -29,8 +29,8 @@ class NavigatorTest {
 
     @Test
     fun testNavigatorOutput(): Unit = runBlocking {
-        val start = VLocation(lat = 46.6247, lon = 14.3053)
-        val stop  = VLocation(lat =  47.073863, lon = 15.415192)
+        val start = Location(lat = 46.6247, lon = 14.3053)
+        val stop  = Location(lat =  47.073863, lon = 15.415192)
 
         println("--- NAVIGATOR TEST START ---")
         println("Route: Villach -> Graz")

@@ -5,6 +5,10 @@
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import com.google.gson.Gson
 import org.maplibre.spatialk.geojson.Position
 import com.example.appdevproject26s.INavigate
@@ -13,18 +17,22 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.appdevproject26s.navigate.OrsClientAd.apiAd
+import com.example.appdevproject26s.navigate.Zeitberechnung.haversine
 import com.example.appdevproject26s.navigate.Zeitberechnung.isOffRoute
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.system.exitProcess
 
 object Navigate : INavigate {
     private var dist: Double = 0.0
     private const val TAG = "Navigate"
 
     private var db: RouteDao? = null
+    private var vibrator: Vibrator? = null
 
     override var noMaut: Boolean = false
     override var noHighway: Boolean = false
@@ -32,7 +40,7 @@ object Navigate : INavigate {
     private var routeaktiv: Boolean = false
     var currentTrip: Trip? by mutableStateOf(null)
         private set
-    private var ziel: VLocation = VLocation(0.0,0.0)
+    private var ziel: Location = Location(0.0,0.0)
 
     private var geraet: String = ""
 
@@ -52,104 +60,193 @@ object Navigate : INavigate {
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job())
     fun init(context: Context) {
         db = RouteDatabase.getDatabase(context).routeDao()
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
     }
 
-    override suspend fun calcRoute(start: VLocation, stop: VLocation, vehicle: String)
-    {
-        val avoids = mutableListOf<String>()
-        if (noMaut) avoids.add("tollways")
-        if (noHighway) avoids.add("highways")
-        val orsOptions = if (avoids.isNotEmpty()) OrsOptions(avoid_features = avoids) else null
-
-        val request = OrsRequest(
-            coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat)),
-            options = orsOptions
-        )
-        ziel = stop   
-        geraet = vehicle
-        routeaktiv = true
-
-        // ORS profile mapping (Valhalla uses auto/pedestrian/bicycle, ORS uses driving-car/foot-walking etc.)
-
-        val profile = when (vehicle) {
-            "auto", "driving-car" -> "driving-car"
-            "pedestrian", "foot-walking" -> "foot-walking"
-            "bicycle", "cycling-regular" -> "cycling-regular"
-            else -> "driving-car"
-        }
-
-        val response = try {
-            OrsClient.api.getRoute(OrsClient.API_KEY, profile, request)
+    fun triggerVibration(duration: Long = 500) {
+        val currentVibrator = vibrator ?: return
+        Log.d(TAG, "Triggering vibration: $duration ms")
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                currentVibrator.vibrate(
+                    VibrationEffect.createOneShot(
+                        duration,
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    )
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                currentVibrator.vibrate(duration)
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "ORS API Exception: ${e.message}", e)
-            return
+            Log.e(TAG, "Vibration failed: ${e.message}")
         }
+    }
+    //val meineOrsApi = OrsClientAd.create(OpenRouteServiceApi::class.java)
+    override fun calcRoute(start: Location, stop: Location, vehicle: String)
+    {
+        // Alte Route löschen, bevor die neue berechnet wird
+        currentTrip = null
+        routePoints = emptyList()
+        manoevertext = ArrayList()
+        totalLengthKM = 0.0
+        durationSeconds = 0L
+        speedLimit = null
 
-        if (response == null || !response.isSuccessful) {
-            val errorMsg = "ORS API Error: ${response?.code()} ${response?.message()}"
-            Log.e(TAG, errorMsg)
-            val errorBody = response?.errorBody()?.string()
-            Log.e(TAG, "ORS Error Body: $errorBody")
-            return
-        }
+        scope.launch {
+            val avoids = mutableListOf<String>()
+            if (noMaut) avoids.add("tollways")
+            if (noHighway) avoids.add("highways")
+            val orsOptions = if (avoids.isNotEmpty()) OrsOptions(avoid_features = avoids) else null
 
-        val body = response.body()
-        Log.d(TAG, "ORS API Success. Body: $body")
-        val route = body?.routes?.firstOrNull()
-
-        if (route == null) {
-            Log.e(TAG, "ORS Route is NULL")
-            return
-        }
-
-        val trip = Trip(
-            summary = route.summary,
-            segments = route.segments,
-            extras = route.extras
-        )
-
-        currentTrip = trip
-        totalLengthKM = trip.summary.distance
-        durationSeconds = trip.summary.duration.toLong()
-
-        routePoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
-
-        db?.insertRoute(
-            RouteEntity(
-                timestamp = System.currentTimeMillis(),
-                startName = "${start.lat}, ${start.lon}",
-                destinationName = "${stop.lat}, ${stop.lon}",
-                tripJson = RouteConverter.tripToJson(trip),
-                routePointsJson = RouteConverter.pointsToJson(routePoints)
+            val request = OrsRequest(
+                coordinates = listOf(listOf(start.lon, start.lat), listOf(stop.lon, stop.lat)),
+                options = orsOptions
             )
-        )
-        getSpeedLimit(start)
+            ziel = stop
+            geraet = vehicle
+            routeaktiv = true
+
+            // ORS profile mapping (Valhalla uses auto/pedestrian/bicycle, ORS uses driving-car/foot-walking etc.)
+
+            val profile = when (vehicle) {
+                "auto", "driving-car" -> "driving-car"
+                "pedestrian", "foot-walking" -> "foot-walking"
+                "bicycle", "cycling-regular" -> "cycling-regular"
+                else -> "driving-car"
+            }
+
+            val response = try {
+                withContext(Dispatchers.IO) {
+                    OrsClient.api.getRoute(API_KEY, profile, request)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "ORS API Exception: ${e.message}", e)
+                return@launch
+            }
+
+            if (response == null || !response.isSuccessful) {
+                val errorMsg = "ORS API Error: ${response?.code()} ${response?.message()}"
+                Log.e(TAG, errorMsg)
+                val errorBody = response?.errorBody()?.string()
+                Log.e(TAG, "ORS Error Body: $errorBody")
+                return@launch
+            }
+
+            val body = response.body()
+            Log.d(TAG, "ORS API Success. Body: $body")
+            val route = body?.routes?.firstOrNull()
+
+            if (route == null) {
+                Log.e(TAG, "ORS Route is NULL")
+                return@launch
+            }
+
+            val trip = Trip(
+                summary = route.summary,
+                segments = route.segments,
+                extras = route.extras
+            )
+
+            currentTrip = trip
+            totalLengthKM = trip.summary.distance
+            durationSeconds = trip.summary.duration.toLong()
+
+            routePoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
+            
+            db?.insertRoute(
+                RouteEntity(
+                    timestamp = System.currentTimeMillis(),
+                    startName = "${start.lat}, ${start.lon}",
+                    destinationName = "${stop.lat}, ${stop.lon}",
+                    tripJson = RouteConverter.tripToJson(trip),
+                    routePointsJson = RouteConverter.pointsToJson(routePoints)
+                )
+            )
+            println("Von:")
+            updateAdresse(start)
+            println("Nach:")
+            updateAdresse(stop)
+            scope.launch {  getSpeedLimit(start)}
+            withContext(Dispatchers.Main) {
+                showChangeDirection()
+                NavigateTestaus(start, stop)
+            }
+        }
     }
 
-    override suspend fun startRoute() {
+    fun NavigateTestaus(start: Location, stop: Location){
+        println("------------------------Start Berechne Route-----------------------------------------------------------")
+        if (currentTrip != null) {
+            println("STATUS: Erfolg")
+            println("START:  lat=${start.lat}, lon=${start.lon}")
+            println("ZIEL:   lat=${stop.lat}, lon=${stop.lon}")
+            println("DISTANZ: ${totalLengthKM} km")
+            println("DAUER: ${durationSeconds} Sekunden")
+            println("DAUER (min): ${durationSeconds / 60}")
+            println("PUNKTE gesamt: ${routePoints.size}")
+
+            val sample = routePoints
+                .filterIndexed { i, _ -> i % maxOf(1, routePoints.size / 10) == 0 }
+                .take(10)
+            println("--- 10 Routenpunkte (gleichmäßig verteilt) ---")
+            sample.forEachIndexed { i, p -> println("  [${i + 1}] lat=${p.latitude}, lon=${p.longitude}") }
+
+
+            //println("SPEED LIMIT (Startpunkt): ${speedLimit ?: "N/A"} km/h")
+
+            // Test Matrix API (Reine Zeitabfrage)
+            println("--- Matrix API Test ---")
+            scope.launch {
+                calcRemainingTimeFromServer(start)
+                if (manoevertext != null) {
+                    println("Matrix DISTANZ: ${totalLengthKM} km")
+                    println("Matrix DAUER: ${durationSeconds} Sekunden")
+                } else {
+                    println("Matrix API fehlgeschlagen")
+                }
+            }
+        } else {
+            println("STATUS: Fehler bei der Routenberechnung")
+            exitProcess(0)
+        }
+        println("------------------------Stop Berechnen Route-----------------------------------------------------------")
+    }
+
+    override fun startRoute() {
         if (currentTrip != null)
             routeaktiv = true;
     }
 
     override suspend fun loadLastRoute(): Trip? {
-        val last = db?.getLastRoute() ?: return null
-        val trip = RouteConverter.jsonToTrip(last.tripJson)
+
+        val last = db?.getLastRoute()
+        val trip = RouteConverter.jsonToTrip(last?.tripJson ?: "")
         currentTrip = trip
         totalLengthKM = trip.summary.distance
         durationSeconds = trip.summary.duration.toLong()
-        routePoints = RouteConverter.jsonToPoints(last.routePointsJson)
+        routePoints = RouteConverter.jsonToPoints(last?.routePointsJson ?: "")
         return trip
     }
 
-    override suspend fun updatePosition(now: VLocation) {
-        getSpeedLimit(now)
-        if (routeaktiv) {
-            if (isOffRoute(now, routePoints)) {
-                calcRoute(now, ziel, geraet)
-            } else {
-                calcRemainingTimeFromServer(now)
-                showOnlyLeftInstruct(now)
-                showChangeDirection()
+    override fun updatePosition(now: Location) {
+        scope.launch {
+            getSpeedLimit(now)
+            updateAdresse(now)
+            if (routeaktiv) {
+                if (isOffRoute(now, routePoints, 50.0)) {
+                    calcRoute(now, ziel, geraet)
+                } else {
+                    calcRemainingTimeFromServer(now)
+                    showOnlyLeftInstruct(now)
+                    showChangeDirection()
+                }
             }
         }
     }
@@ -163,7 +260,7 @@ object Navigate : INavigate {
         db?.deleteRouteById(routeId)
     }
 
-    suspend fun getSpeedLimit(now: VLocation) {
+    suspend fun getSpeedLimit(now: Location) {
         // 1. Erst in der aktuellen Route suchen (falls vorhanden)
         val trip = currentTrip
         var result: Int? = null
@@ -180,7 +277,7 @@ object Navigate : INavigate {
 
         if (result == null) {
             // 2. Fallback auf Overpass API
-            val query = "[out:json];way(around:100,${now.lat},${now.lon})[highway];out tags;"
+            val query = "[out:json];way(around:50,${now.lat},${now.lon})[highway];out tags;"
             println("Overpass query: $query")
             val json = withContext(Dispatchers.IO) {
                 OverpassClient.query(query)
@@ -221,7 +318,7 @@ object Navigate : INavigate {
         }
     }
 
-    suspend fun calcRemainingTimeFromServer(now: VLocation) {
+    suspend fun calcRemainingTimeFromServer(now: Location) {
         val target = ziel ?: return
 
         val avoids = mutableListOf<String>()
@@ -242,7 +339,9 @@ object Navigate : INavigate {
         }
 
         val response = try {
-            OrsClient.api.getMatrix(OrsClient.API_KEY, profile, request)
+            withContext(Dispatchers.IO) {
+                OrsClient.api.getMatrix(API_KEY, profile, request)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "ORS Matrix API Exception: ${e.message}", e)
             null
@@ -254,13 +353,12 @@ object Navigate : INavigate {
         }
 
         val body = response.body()
-        val dist = body?.distances?.get(0)?.get(1) ?: 0.0 // Von 0 zu 1
-        val dur = body?.durations?.get(0)?.get(1)?.toLong()
+        val dist_matrix = body?.distances?.get(0)?.get(1) ?: 0.0 // Von 0 zu 1
+        val dur_matrix = body?.durations?.get(0)?.get(1)?.toLong()
 
-        if (dist != null && dur != null) {
-            totalLengthKM=dist
-            durationSeconds=dur
-
+        if (dist_matrix != null && dur_matrix != null) {
+            totalLengthKM = dist_matrix
+            durationSeconds = dur_matrix
         }
     }
 
@@ -304,24 +402,36 @@ object Navigate : INavigate {
         totalLengthKM = 0.0
         durationSeconds = 0
         speedLimit = null
-        ziel = VLocation(0.0,0.0)
+        ziel = Location(0.0,0.0)
         geraet = ""
         routeaktiv = false
     }
 
-    fun showChangeDirection() {
+    suspend fun showChangeDirection() {
         try {
             val newList = ArrayList<InstructionsNavigate>()
             var remainingDist: Double = currentTrip?.summary?.distance ?: 0.0
 
             currentTrip?.segments?.forEach { segment ->
                 segment.steps.forEach { step ->
-                    val anweisung = maneuversde[step.type] ?: "unbekannt"
+                    var anweisung = maneuversde[step.type] ?: "unbekannt"
 
+                    // Koordinaten des Manövers bestimmen (ORS liefert Indices in way_points)
+                    val pointIndex = step.way_points.firstOrNull() ?: 0
+                    val point = routePoints.getOrNull(pointIndex)
+                    
+                    val adresse = if (point != null) {
+                        getAdresseOnce(Location(point.latitude, point.longitude))
+                    } else {
+                        ""
+                    }
+                    if(anweisung=="unbekannt")
+                        anweisung="wechsel auf"
                     val schritt = InstructionsNavigate(
                         manoever = "In ${step.distance} km $anweisung",
                         distance = step.distance,
-                        todrivekm = remainingDist
+                        todrivekm = remainingDist,
+                        adresse = adresse
                     )
                     newList.add(schritt)
                     remainingDist -= step.distance
@@ -333,7 +443,7 @@ object Navigate : INavigate {
             Log.e(TAG, "Fehler in showChangeDirection: ${e.message}", e)
         }
     }
-    suspend fun showOnlyLeftInstruct(pos: VLocation) {
+    fun showOnlyLeftInstruct(pos: Location) {
         val retmanlist = ArrayList<InstructionsNavigate>() ?: return
 
 
@@ -358,5 +468,86 @@ object Navigate : INavigate {
         }
         manoevertext=retmanlist;
     }
-}
 
+    private var lastAddressLocation: Location? = null
+
+    suspend fun getCoordinatesFromAddress(address: String): Location? {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiAd.geocode(
+                    apiKey = API_KEY,
+                    text = address
+                )
+            }
+            val feature = response.features.firstOrNull()
+            val coords = feature?.geometry?.coordinates
+            if (coords != null && coords.size >= 2) {
+                Location(lat = coords[1], lon = coords[0])
+            } else null
+        } catch (e: Exception) {
+            Log.e("Navi", "Fehler beim Geocoding: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun getAdresseOnce(now: Location): String {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiAd.reverseGeocode(
+                    apiKey = API_KEY,
+                    longitude = now.lon,
+                    latitude = now.lat
+                )
+            }
+            response.features.firstOrNull()?.properties?.label ?: ""
+        } catch (e: Exception) {
+            Log.e("Navi", "Fehler beim Laden der Adresse: ${e.message}")
+            ""
+        }
+    }
+
+    suspend fun updateAdresse(now: Location) {
+
+        // BERECHNUNG: Hat sich die Position deutlich verändert?
+        /*val sollteAdresseLaden = lastAddressLocation == null ||
+                isOffRoute(
+                    now,
+                    listOf(Position(lastAddressLocation!!.lon, lastAddressLocation!!.lat)),
+                    30.0
+                )
+
+        if (sollteAdresseLaden) {*/
+            try {
+                // Retrofit-Aufruf außerhalb der Composable (in der suspend-Funktion)
+                val response = withContext(Dispatchers.IO) {
+                    apiAd.reverseGeocode(
+                        apiKey = API_KEY,
+                        longitude = now.lon,
+                        latitude = now.lat
+                    )
+                }
+
+                // Daten sicher auslesen
+                val properties = response.features.firstOrNull()?.properties
+                val vollständigeAdresse =
+                    properties?.label // "Berliner Straße 45, 69120 Heidelberg"
+
+                if (vollständigeAdresse != null) {
+                    // Schicke die Adresse an dein UI (z.B. über ein StateFlow oder LiveData)
+                    println(vollständigeAdresse)
+                    lastAddressLocation = now
+                }
+            } catch (e: Exception) {
+                // Fange Netzwerkfehler (z.B. kein Internet) ab, damit die App nicht abstürzt
+                Log.e("Navi", "Fehler beim Laden der Adresse: ${e.message}")
+            }
+       // }
+    }
+    override fun isononePoint(von: Location,nach: Location):Double {
+        return haversine(Position(von.lon, von.lat),Position(nach.lon, nach.lat))
+    }
+
+    override fun routeNachAdresse(adresseStart: String, adresseStop: String) {
+        TODO("Not yet implemented")
+    }
+}

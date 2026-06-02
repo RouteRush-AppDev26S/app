@@ -9,11 +9,11 @@ interface INavigate
     /**
      * Berechnet die Route und speichert sie ab
      */
-    suspend fun calcRoute(start: VLocation, stop: VLocation, vehicle: String)
+    fun calcRoute(start: Location, stop: Location, vehicle: String)
     /*
      *      Startet berechnete route
      */
-    suspend fun startRoute()
+    fun startRoute()
     /**
      * Letzte Route laden
      */
@@ -22,7 +22,7 @@ interface INavigate
     *   Aktualisiert alle variablen, wenn keine route aktiv ist verändert sich nur speedlimit
     *   bitte nur in mindestabstand von 5 sec aufrufen
      */
-    suspend fun updatePosition(now: VLocation)
+    fun updatePosition(now: Location)
     /**
      * Enthält die Route als List<Position>
      */
@@ -30,13 +30,13 @@ interface INavigate
 
     /**
      * Enthält die Streckenlänge in KM
-     * kann durch aufruf calcRemainingTimeFromServer(now: VLocation ) ersetzt werden
+     * kann durch aufruf calcRemainingTimeFromServer(now: Location ) ersetzt werden
      */
     val totalLengthKM: Double
     
     /**
      * Enthält die voraussichtliche Reisedauer in Sekunden
-     * kann durch aufruf calcRemainingTimeFromServer(now: VLocation ) ersetzt werden
+     * kann durch aufruf calcRemainingTimeFromServer(now: Location ) ersetzt werden
      * beobachtbar
      */
     val durationSeconds: Long
@@ -63,11 +63,6 @@ interface INavigate
     fun stopRoute()
 
     /**
-     * Aktualisiert die aktuelle Position und prüft Off-Route
-     */
-    suspend fun updatePosition(now: VLocation)
-
-    /**
      * TextAusgabe der NavigationsAnweisungen
      * im Format
      * manoevertext.todrive restdistanz
@@ -75,4 +70,7 @@ interface INavigate
      * manoevertext.todrivekm zurückzulegende kilometer bei Segment
      */
     var manoevertext: ArrayList<InstructionsNavigate>
+    fun isononePoint(von: Location,nach: Location):Double
+
+    fun routeNachAdresse(adresseStart:String,adresseStop:String)
 }

@@ -12,7 +12,7 @@ object Zeitberechnung {
     /**
      * Berechnet die verbleibende Distanz zum Ziel in Kilometern.
      */
-    fun getRemainingDistance(now: VLocation, routePoints: List<Position>): Double {
+    fun getRemainingDistance(now: Location, routePoints: List<Position>): Double {
         if (routePoints.isEmpty()) return 0.0
         
         val closestIndex = findClosestShapeIndex(Position(now.lon, now.lat), routePoints)
@@ -29,7 +29,7 @@ object Zeitberechnung {
      * Schätzt die verbleibende Zeit in Sekunden.
      * Nutzt die verbleibende Distanz und eine Durchschnittsgeschwindigkeit.
      */
-    fun getRemainingTime(now: VLocation, routePoints: List<Position>, trip: Trip?): Double {
+    fun getRemainingTime(now: Location, routePoints: List<Position>, trip: Trip?): Double {
         val remainingDist = getRemainingDistance(now, routePoints)
         if (remainingDist <= 0 || trip == null) return 0.0
         
@@ -44,7 +44,7 @@ object Zeitberechnung {
      * Prüft, ob der Nutzer Off-Route ist.
      */
     fun isOffRoute(
-        now: VLocation,
+        now: Location,
         routePoints: List<Position>,
         thresholdMeters: Double = 50.0
     ): Boolean {

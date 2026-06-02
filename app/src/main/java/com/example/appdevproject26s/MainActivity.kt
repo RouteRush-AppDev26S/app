@@ -10,11 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.appdevproject26s.navigate.Navigate
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Navigate.init(this)
         enableEdgeToEdge()
         setContent {
             AppDevProject26STheme {
