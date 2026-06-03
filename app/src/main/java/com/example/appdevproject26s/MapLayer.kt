@@ -13,6 +13,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appdevproject26s.navigate.Navigate
@@ -37,6 +38,7 @@ import org.maplibre.spatialk.geojson.MultiPoint
 fun MapLayer(
     onMenuClick: () -> Unit = {},
 ) {
+    val density = LocalDensity.current
     val context = LocalContext.current
 
     val app = context.applicationContext as MapApplication
@@ -86,7 +88,7 @@ fun MapLayer(
                 ClickResult.Pass
             },
             onMapLongClick = { point, screenPoint ->
-                homeViewModel.onMapPress(point, screenPoint)
+                homeViewModel.onMapPress(point, screenPoint, density)
                 ClickResult.Consume
             },
             // 4. Map Options (UI and Gestures)
