@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class HomeScreenViewModel(private val repository: MapSettingsRepository) : ViewModel() {
     private val defaultPos = CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0)
@@ -57,9 +59,7 @@ class HomeScreenViewModel(private val repository: MapSettingsRepository) : ViewM
         Log.d("MAP_PRESS", "Clicked at Lat: ${point.latitude}, Lng: ${point.longitude}")
         Log.d("MAP_PRESS", "Screen pixels - X: ${screenPoint.x}, Y: ${screenPoint.y}")
         //Navigate.updatePosition(Location(point.latitude, point.longitude))
-        var abstand=(lastDp.x+lastDp.y)-(screenPoint.x+screenPoint.y)
-        if(abstand<0.dp)
-            abstand=abstand*(-1)
+        val abstand=sqrt((screenPoint.x-lastDp.x).value.pow(2) + (screenPoint.y-lastDp.y).value.pow(2)).dp
         if(first){
             Navigate.triggerVibration(500)
             start.lon=point.longitude
