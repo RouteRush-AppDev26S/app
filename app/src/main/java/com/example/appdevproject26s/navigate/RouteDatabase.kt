@@ -62,7 +62,7 @@ abstract class RouteDatabase : RoomDatabase() {
                     context.applicationContext,
                     RouteDatabase::class.java,
                     "route_database"
-                ).build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }
@@ -74,7 +74,7 @@ object RouteConverter {
     private val gson = Gson()
 
     fun tripToJson(trip: Trip): String = gson.toJson(trip)
-    fun jsonToTrip(json: String): Trip = gson.fromJson(json, Trip::class.java)
+    fun jsonToTrip(json: String): Trip? = gson.fromJson(json, Trip::class.java)
 
     fun pointsToJson(points: List<Position>): String = gson.toJson(points)
     fun jsonToPoints(json: String): List<Position> {

@@ -160,15 +160,19 @@ object Navigate : INavigate {
 
             routePoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
             
-            db?.insertRoute(
-                RouteEntity(
-                    timestamp = System.currentTimeMillis(),
-                    startName = "${start.lat}, ${start.lon}",
-                    destinationName = "${stop.lat}, ${stop.lon}",
-                    tripJson = RouteConverter.tripToJson(trip),
-                    routePointsJson = RouteConverter.pointsToJson(routePoints)
+            try {
+                db?.insertRoute(
+                    RouteEntity(
+                        timestamp = System.currentTimeMillis(),
+                        startName = "${start.lat}, ${start.lon}",
+                        destinationName = "${stop.lat}, ${stop.lon}",
+                        tripJson = RouteConverter.tripToJson(trip),
+                        routePointsJson = RouteConverter.pointsToJson(routePoints)
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                Log.e(TAG, "DB insertRoute fehlgeschlagen: ${e.message}", e)
+            }
             println("Von:")
             updateAdresse(start)
             println("Nach:")
@@ -225,14 +229,19 @@ object Navigate : INavigate {
     }
 
     override suspend fun loadLastRoute(): Trip? {
-
-        val last = db?.getLastRoute()
-        val trip = RouteConverter.jsonToTrip(last?.tripJson ?: "")
-        currentTrip = trip
-        totalLengthKM = trip.summary.distance
-        durationSeconds = trip.summary.duration.toLong()
-        routePoints = RouteConverter.jsonToPoints(last?.routePointsJson ?: "")
-        return trip
+        val last = db?.getLastRoute() ?: return null
+        if (last.tripJson.isEmpty()) return null
+        return try {
+            val trip = RouteConverter.jsonToTrip(last.tripJson) ?: return null
+            currentTrip = trip
+            totalLengthKM = trip.summary.distance
+            durationSeconds = trip.summary.duration.toLong()
+            routePoints = RouteConverter.jsonToPoints(last.routePointsJson)
+            trip
+        } catch (e: Exception) {
+            Log.e(TAG, "loadLastRoute fehlgeschlagen: ${e.message}", e)
+            null
+        }
     }
 
     override fun updatePosition(now: Location) {
@@ -420,7 +429,7 @@ object Navigate : INavigate {
                     val pointIndex = step.way_points.firstOrNull() ?: 0
                     val point = routePoints.getOrNull(pointIndex)
                     
-                    val adresse = if (point != null) {
+                    val adresse = if (point != null && step.type != 6) {
                         getAdresseOnce(Location(point.latitude, point.longitude))
                     } else {
                         ""
@@ -500,8 +509,11 @@ object Navigate : INavigate {
                 )
             }
             response.features.firstOrNull()?.properties?.label ?: ""
+        } catch (e: retrofit2.HttpException) {
+            Log.e("Navi", "Geocoding HTTP ${e.code()} ${e.message()} body=${e.response()?.errorBody()?.string()}")
+            ""
         } catch (e: Exception) {
-            Log.e("Navi", "Fehler beim Laden der Adresse: ${e.message}")
+            Log.e("Navi", "Geocoding Exception ${e.javaClass.simpleName}: ${e.message}")
             ""
         }
     }
