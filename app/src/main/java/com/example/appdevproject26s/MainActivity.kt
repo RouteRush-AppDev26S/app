@@ -13,10 +13,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.appdevproject26s.navigate.Navigate
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 
+import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.HiltAndroidApp
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Navigate.init(this)
         enableEdgeToEdge()
         setContent {
             AppDevProject26STheme {
@@ -35,11 +38,5 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("home") { HomeScreen(navController) }
         composable( route = "route" ) { RouteScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
-    }
-}
-
-class MapApplication : Application() {
-    val repository: MapSettingsRepository by lazy {
-        MapSettingsRepository(dataStore)
     }
 }

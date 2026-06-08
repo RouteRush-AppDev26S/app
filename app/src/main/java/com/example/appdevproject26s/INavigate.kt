@@ -70,6 +70,12 @@ interface INavigate
      * manoevertext.todrivekm zurückzulegende kilometer bei Segment
      */
     var manoevertext: ArrayList<InstructionsNavigate>
+
+    val startAddress: String
+    val destinationAddress: String
+    val isCalculating: Boolean
+    val errorMessage: String?
+
     fun isononePoint(von: Location,nach: Location):Double
 
     fun routeNachAdresse(adresseStart:String,adresseStop:String)

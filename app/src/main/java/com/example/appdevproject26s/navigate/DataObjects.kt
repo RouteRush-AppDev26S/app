@@ -25,7 +25,7 @@ import retrofit2.http.Query
 // ---- API Interface ----
 const val API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZkYTFlY2Q2N2FiNTQyMTdiMjAyMmZkMDNmNTI0ZTk0IiwiaCI6Im11cm11cjY0In0="
 interface OrsApi {
-    @Headers("Accept: application/json")
+    @Headers("Accept: application/json", "Content-Type: application/json")
     @POST("v2/directions/{profile}")
     suspend fun getRoute(
         @Header("Authorization") apiKey: String,
@@ -33,7 +33,7 @@ interface OrsApi {
         @Body request: OrsRequest
     ): Response<OrsResponse>
 
-    @Headers("Accept: application/json")
+    @Headers("Accept: application/json", "Content-Type: application/json")
     @POST("v2/matrix/{profile}")
     suspend fun getMatrix(
         @Header("Authorization") apiKey: String,
@@ -60,40 +60,7 @@ interface OrsApi {
 
 
 }
-data class OrsAddressResponseAdr(
-    @SerializedName("features") val features: List<OrsFeature>
-)
-
-data class OrsFeatureAdr(
-    @SerializedName("properties") val properties: OrsProperties
-)
-
-data class OrsPropertiesAdr(
-    @SerializedName("label") val label: String?,
-    @SerializedName("street") val street: String?,
-    @SerializedName("housenumber") val housenumber: String?,
-    @SerializedName("locality") val locality: String?,
-    @SerializedName("postalcode") val postalcode: String?
-)
-// ---- Client ----
-
-object OrsClient {
-    private const val BASE_URL = "https://api.openrouteservice.org/"
-
-    val api: OrsApi = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(OrsApi::class.java)
-
-}
-object OrsClientAd {
-    val apiAd: OrsApi = Retrofit.Builder()
-        .baseUrl("https://api.openrouteservice.org/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(OrsApi::class.java)
-}
+// ---- Client (Moved to NetworkModule) ----
 
 // ---- Hilfsfunktion ----
 

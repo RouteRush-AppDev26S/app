@@ -7,7 +7,7 @@ package com.example.appdevproject26s.navigate
 import org.maplibre.spatialk.geojson.Position
 import kotlin.math.*
 
-object Zeitberechnung {
+class Zeitberechnung {
 
     /**
      * Berechnet die verbleibende Distanz zum Ziel in Kilometern.

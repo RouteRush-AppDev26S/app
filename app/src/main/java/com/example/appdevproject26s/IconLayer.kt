@@ -19,21 +19,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
 fun IconLayer(
     modifier: Modifier = Modifier,
     onResetToNorth: () -> Unit,
     onMenuClick: () -> Unit,
+    homeViewModel: HomeScreenViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-
-    val app = context.applicationContext as MapApplication
-    val repository = app.repository
-
-    val homeViewModel: HomeScreenViewModel = viewModel(
-        factory = HomeScreenViewModel.provideFactory(repository)
-    )
-
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier

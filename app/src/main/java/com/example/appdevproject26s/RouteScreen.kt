@@ -20,9 +20,14 @@ import androidx.navigation.NavController
 import com.example.appdevproject26s.navigate.InstructionsNavigate
 import com.example.appdevproject26s.navigate.Navigate
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
-fun RouteScreen(navController: NavController) {
-    val instructions = Navigate.manoevertext
+fun RouteScreen(
+    navController: NavController,
+    homeViewModel: HomeScreenViewModel = hiltViewModel()
+) {
+    val instructions = homeViewModel.manoevertext
 
     ScreenScaffold(
         navController = navController,

@@ -5,17 +5,15 @@
 
 package com.example.appdevproject26s.navigate
 
-import android.content.Context
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Room
 import androidx.room.RoomDatabase
-
-
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.maplibre.spatialk.geojson.Position
@@ -48,36 +46,30 @@ interface RouteDao {
     suspend fun deleteRouteById(routeId: Int): Int
 }
 
-@Database(entities = [RouteEntity::class], version = 1, exportSchema = false)
+@Database(entities = [RouteEntity::class], version = 2, exportSchema = false)
+@TypeConverters(RouteConverter::class)
 abstract class RouteDatabase : RoomDatabase() {
     abstract fun routeDao(): RouteDao
-
-    companion object {
-        @Volatile
-        private var INSTANCE: RouteDatabase? = null
-
-        fun getDatabase(context: Context): RouteDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    RouteDatabase::class.java,
-                    "route_database"
-                ).fallbackToDestructiveMigration(true).build()
-                INSTANCE = instance
-                instance
-            }
-        }
-    }
 }
 
 object RouteConverter {
     private val gson = Gson()
 
+    @TypeConverter
+    @JvmStatic
     fun tripToJson(trip: Trip): String = gson.toJson(trip)
+
+    @TypeConverter
+    @JvmStatic
     fun jsonToTrip(json: String): Trip? = gson.fromJson(json, Trip::class.java)
 
+    @TypeConverter
+    @JvmStatic
     fun pointsToJson(points: List<Position>): String = gson.toJson(points)
-    fun jsonToPoints(json: String): List<Position> {
+
+    @TypeConverter
+    @JvmStatic
+    fun jsonToPoints(json: String): List<Position>? {
         val type = object : TypeToken<List<Position>>() {}.type
         return gson.fromJson(json, type)
     }

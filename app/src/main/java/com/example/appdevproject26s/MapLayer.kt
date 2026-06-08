@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,19 +35,14 @@ import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.LineString
 import org.maplibre.spatialk.geojson.MultiPoint
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
 fun MapLayer(
     onMenuClick: () -> Unit = {},
+    homeViewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val density = LocalDensity.current
-    val context = LocalContext.current
-
-    val app = context.applicationContext as MapApplication
-    val repository = app.repository
-
-    val homeViewModel: HomeScreenViewModel = viewModel(
-        factory = HomeScreenViewModel.provideFactory(repository)
-    )
 
     val scope = rememberCoroutineScope()
 
@@ -106,7 +102,7 @@ fun MapLayer(
                         ),
                 ),
         ) {
-            val routePoints = Navigate.routePoints
+            val routePoints = homeViewModel.routePoints
             
             // Verhindert Absturz, wenn noch keine Route vorhanden ist
             val routeSource = rememberGeoJsonSource(
@@ -127,6 +123,19 @@ fun MapLayer(
                     )
                 )
             )
+
+            val userLocation by homeViewModel.userLocation.collectAsState()
+            val locationSource = rememberGeoJsonSource(
+                data = GeoJsonData.Features(MultiPoint(listOfNotNull(userLocation)))
+            )
+            if (userLocation != null) {
+                CircleLayer(
+                    id = "user-location",
+                    source = locationSource,
+                    color = const(Color(0xFF2196F3)),
+                    radius = const(5.dp)
+                )
+            }
 
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
             if (routePoints.isNotEmpty()) {
