@@ -23,9 +23,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.maplibre.android.geometry.LatLng
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.collections.forEach
 
 @Singleton
 class Navigate @Inject constructor(
@@ -267,7 +269,7 @@ class Navigate @Inject constructor(
     override fun updatePosition(now: Location) {
         scope.launch {
             getSpeedLimit(now)
-            updateAdresse(now)
+            //updateAdresse(now)
             if (routeaktiv) {
                 if (zeitberechnung.isOffRoute(now, routePoints, 50.0)) {
                     calcRoute(now, ziel, geraet)
@@ -453,13 +455,29 @@ class Navigate @Inject constructor(
             currentTrip?.segments?.forEach { segment ->
                 segment.steps.forEach { step ->
                     var anweisung = maneuversde[step.type] ?: "unbekannt"
+                    val startKombinationsIndex: Int = step.way_points.first()
+                    val endKombinationsIndex: Int = step.way_points.last()
+                    var strassepoint=startKombinationsIndex+(endKombinationsIndex-startKombinationsIndex)/2
+                    // Jetzt holen wir uns die echte Location aus der Gesamtliste
+                   // val manoeverLocation: Position? = if (startKombinationsIndex = step.way_points?.lastOrNull() != null && startKombinationsIndex < routePoints.size) {
+                    val manoeverLocation=routePoints[strassepoint]
+                    //} else {
+                        null
+                   // }
                     if (anweisung == "unbekannt") anweisung = "wechsel auf"
                     val schritt = InstructionsNavigate(
                         manoever = "In ${step.distance} km $anweisung",
                         distance = step.distance,
                         todrivekm = remainingDist,
-                        adresse = ""
-                    )
+                        adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
+                            manoeverLocation?.longitude ?: 0.0))
+                        )
+                        if(schritt.adresse.isEmpty())
+                        {
+                            val manoeverLocation=routePoints[step.way_points.first()]
+                            schritt.adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
+                                manoeverLocation?.longitude ?: 0.0))
+                        }
                     newList.add(schritt)
                     remainingDist -= step.distance
                 }

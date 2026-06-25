@@ -270,20 +270,20 @@ fun parseMaxspeed(value: String): Int? {
 }
 
 val maneuversde = mapOf(
-    0 to "links abbiegen",
-    1 to "rechts abbiegen",
-    2 to "scharf links abbiegen",
-    3 to "scharf rechts abbiegen",
-    4 to "leicht links abbiegen",
-    5 to "leicht rechts abbiegen",
-    6 to "geradeaus fahren",
+    0 to "links abbiegen in",
+    1 to "rechts abbiegen in",
+    2 to "scharf links abbiegen in",
+    3 to "scharf rechts abbiegen in",
+    4 to "leicht links abbiegen in",
+    5 to "leicht rechts abbiegen in",
+    6 to "geradeaus fahren auf",
     7 to "in den Kreisverkehr einfahren",
     8 to "Kreisverkehr verlassen",
     9 to "wenden (U-Turn)",
     10 to "Ziel erreicht",
     11 to "Start",
-    12 to "links halten",
-    13 to "rechts halten",
+    12 to "links halten auf",
+    13 to "rechts halten auf",
     14 to "unbekannt"
 )
 

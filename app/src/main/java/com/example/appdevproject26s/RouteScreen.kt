@@ -21,6 +21,7 @@ import com.example.appdevproject26s.navigate.InstructionsNavigate
 import com.example.appdevproject26s.navigate.Navigate
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlin.text.split
 
 @Composable
 fun RouteScreen(
@@ -45,14 +46,17 @@ fun RouteScreen(
                 )
             }
         } else {
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
                 items(instructions) { instruction ->
-                    InstructionRow(instruction)
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    if (!instruction.manoever.equals("Ziel")) {
+                        InstructionRow(instruction)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
                 }
             }
         }
@@ -67,27 +71,37 @@ fun InstructionRow(instruction: InstructionsNavigate) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = instruction.manoever,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (instruction.manoever.contains("Start") || instruction.manoever.contains("Ziel")) {
+                    Text(
+                        text = instruction.adresse,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                } else {
+                    Text(
+                        text = instruction.adresse.split(",").first()
+                            .split(Regex("(?=\\d)"), limit = 2).first(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                Text(
+                    text = "Noch ${String.format("%.2f", instruction.todrivekm)} km bis zum Ziel",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
             Text(
-                text = instruction.manoever,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
+                text = "${String.format("%.1f", instruction.distance * 1000)} m",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                text = instruction.adresse,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-            Text(
-                text = "Noch ${String.format("%.2f", instruction.todrivekm)} km bis zum Ziel",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
-        Text(
-            text = "${String.format("%.1f", instruction.distance * 1000)} m",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+
     }
 }
