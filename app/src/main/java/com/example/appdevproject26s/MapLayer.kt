@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -136,6 +137,15 @@ fun MapLayer(
                     radius = const(5.dp)
                 )
             }
+
+            CircleLayer(
+                id = "planning-points",
+                source = rememberGeoJsonSource(
+                    data = GeoJsonData.Features(MultiPoint(homeViewModel.planningPoints.collectAsState().value))
+                ),
+                color = const(Color.Green),
+                radius = const(7.dp)
+            )
 
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...
             if (routePoints.isNotEmpty()) {

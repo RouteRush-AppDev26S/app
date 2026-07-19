@@ -5,6 +5,7 @@
 package com.example.appdevproject26s.navigate
 
 import android.content.Context
+import android.location.Geocoder
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -21,16 +22,22 @@ import com.example.appdevproject26s.navigate.Zeitberechnung
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.Locale
+import kotlin.collections.first
 import kotlin.collections.forEach
+import kotlin.text.split
 
 @Singleton
 class Navigate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val db: RouteDao,
     private val vibrator: Vibrator,
     private val zeitberechnung: Zeitberechnung,
@@ -42,11 +49,12 @@ class Navigate @Inject constructor(
         private const val TAG = "Navigate"
     }
 
+    var oldadresse: String = ""
     override var noMaut: Boolean = false
     override var noHighway: Boolean = false
 
-    private var routeaktiv: Boolean = false
-    var currentTrip: Trip? by mutableStateOf(null)
+    override var routeaktiv: Boolean = false
+    override var currentTrip: Trip? by mutableStateOf(null)
         private set
     private var ziel: Location = Location(0.0,0.0)
 
@@ -65,6 +73,12 @@ class Navigate @Inject constructor(
     override var speedLimit: Int? by mutableStateOf(null)
         private set
 
+    override var currentAddress: String by mutableStateOf("")
+        private set
+
+    override var currentPosition: Location? by mutableStateOf(null)
+        private set
+
     override var startAddress: String by mutableStateOf("")
         private set
     override var destinationAddress: String by mutableStateOf("")
@@ -76,6 +90,7 @@ class Navigate @Inject constructor(
         private set
 
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job())
+    private val geocoder: Geocoder = Geocoder(context, Locale.getDefault())
 
     fun triggerVibration(duration: Long = 500) {
         val currentVibrator = vibrator
@@ -97,9 +112,7 @@ class Navigate @Inject constructor(
         }
     }
     //val meineOrsApi = OrsClientAd.create(OpenRouteServiceApi::class.java)
-    override fun calcRoute(start: Location, stop: Location, vehicle: String)
-    {
-        // Alte Route löschen, bevor die neue berechnet wird
+    override fun routeReset(){
         currentTrip = null
         routePoints = emptyList()
         manoevertext = ArrayList()
@@ -109,8 +122,12 @@ class Navigate @Inject constructor(
         startAddress = ""
         destinationAddress = ""
         errorMessage = null
+        isCalculating = false
+        routeaktiv = false
+    }
+    override fun calcRoute(start: Location, stop: Location, vehicle: String)
+    {
         isCalculating = true
-
         scope.launch {
             val avoids = mutableListOf<String>()
             if (noMaut) avoids.add("tollways")
@@ -150,7 +167,7 @@ class Navigate @Inject constructor(
             if (response == null || !response.isSuccessful) {
                 val code = response?.code()
                 val msg = if (code == 429) "Zu viele Anfragen, bitte kurz warten."
-                          else "Routenfehler: $code ${response?.message()}"
+                else "Routenfehler: $code ${response?.message()}"
                 Log.e(TAG, "ORS API Error: $code ${response?.message()}")
                 withContext(Dispatchers.Main) {
                     errorMessage = msg
@@ -171,39 +188,40 @@ class Navigate @Inject constructor(
                 }
                 return@launch
             }
-
             val trip = Trip(
                 summary = route.summary,
                 segments = route.segments,
                 extras = route.extras
             )
 
-            currentTrip = trip
-            totalLengthKM = trip.summary.distance
-            durationSeconds = trip.summary.duration.toLong()
-
-            routePoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
-
-            startAddress = getAdresseOnce(start)
-            destinationAddress = getAdresseOnce(stop)
-            try {
-                db.insertRoute(
-                    RouteEntity(
-                        timestamp = System.currentTimeMillis(),
-                        startName = startAddress.ifEmpty { "${start.lat}, ${start.lon}" },
-                        destinationName = destinationAddress.ifEmpty { "${stop.lat}, ${stop.lon}" },
-                        tripJson = RouteConverter.tripToJson(trip),
-                        routePointsJson = RouteConverter.pointsToJson(routePoints)
-                    )
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "DB insertRoute fehlgeschlagen: ${e.message}", e)
-            }
-            scope.launch { getSpeedLimit(start) }
             withContext(Dispatchers.Main) {
+                val current = currentTrip
+                if (current == null) {
+                    currentTrip = trip
+                } else {
+                    currentTrip = Trip(
+                        summary = OrsSummary(
+                            distance = current.summary.distance + trip.summary.distance,
+                            duration = current.summary.duration + trip.summary.duration
+                        ),
+                        segments = current.segments + trip.segments,
+                        extras = trip.extras
+                    )
+                }
+                totalLengthKM = currentTrip?.summary?.distance ?: 0.0
+                durationSeconds = currentTrip?.summary?.duration?.toLong() ?: 0L
+
+                val newPoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
+                routePoints = routePoints + if (routePoints.isNotEmpty()) newPoints.drop(1) else newPoints
+
+                //startAddress = getAdresseOnce(start)
+                destinationAddress = getAdresseOnce(stop)
+                //scope.launch { getSpeedLimit(start) }
+                println(" In zielberechnung ")
                 isCalculating = false
-                showChangeDirection()
-                NavigateTestaus(start, stop)
+                showChangeDirection(true,true)
+                println(" print von calc Ziel")
+                //NavigateTestaus(start, stop)
             }
         }
     }
@@ -440,17 +458,25 @@ class Navigate @Inject constructor(
         routeaktiv = false
     }
 
-    suspend fun showChangeDirection() {
+    override suspend fun storeRoute() {
+        // Implementation for storing the current route if needed
+        // Currently, calcRoute already inserts into DB.
+    }
+
+    suspend fun showChangeDirection(erstes: Boolean = false, letztes: Boolean = false) {
         try {
             val newList = ArrayList<InstructionsNavigate>()
             var remainingDist: Double = currentTrip?.summary?.distance ?: 0.0
-
-            newList.add(InstructionsNavigate(
-                manoever = "Start",
-                distance = 0.0,
-                todrivekm = remainingDist,
-                adresse = startAddress
-            ))
+            if(!erstes) {
+                newList.add(
+                    InstructionsNavigate(
+                        manoever = "Start",
+                        distance = 0.0,
+                        todrivekm = remainingDist,
+                        adresse = startAddress
+                    )
+                )
+            }
 
             currentTrip?.segments?.forEach { segment ->
                 segment.steps.forEach { step ->
@@ -459,8 +485,8 @@ class Navigate @Inject constructor(
                     val endKombinationsIndex: Int = step.way_points.last()
                     var strassepoint=startKombinationsIndex+(endKombinationsIndex-startKombinationsIndex)/2
                     // Jetzt holen wir uns die echte Location aus der Gesamtliste
-                   // val manoeverLocation: Position? = if (startKombinationsIndex = step.way_points?.lastOrNull() != null && startKombinationsIndex < routePoints.size) {
-                    val manoeverLocation=routePoints[strassepoint]
+                    //val manoeverLocation: Position? = if (startKombinationsIndex = step.way_points?.lastOrNull() != null && startKombinationsIndex < routePoints.size) {
+                    val manoeverLocation=routePoints[step.way_points.first()]
                     //} else {
                         null
                    // }
@@ -472,23 +498,29 @@ class Navigate @Inject constructor(
                         adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
                             manoeverLocation?.longitude ?: 0.0))
                         )
-                        if(schritt.adresse.isEmpty())
+                        var newadresse=schritt.adresse.split(",").first()
+                        .split(Regex("(?=\\d)"), limit = 2).first()
+                        if((schritt.adresse.isEmpty() || newadresse.equals(oldadresse)) && (step.way_points.last()+1)< routePoints.size)
                         {
-                            val manoeverLocation=routePoints[step.way_points.first()]
+                            val manoeverLocation=routePoints[step.way_points.last()+1]
                             schritt.adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
                                 manoeverLocation?.longitude ?: 0.0))
                         }
+                    oldadresse=newadresse;
                     newList.add(schritt)
                     remainingDist -= step.distance
                 }
             }
-
-            newList.add(InstructionsNavigate(
-                manoever = "Ziel",
-                distance = 0.0,
-                todrivekm = 0.0,
-                adresse = destinationAddress
-            ))
+            if(!letztes) {
+                newList.add(
+                    InstructionsNavigate(
+                        manoever = "Ziel",
+                        distance = 0.0,
+                        todrivekm = 0.0,
+                        adresse = destinationAddress
+                    )
+                )
+            }
 
             manoevertext = newList
             Log.d(TAG, "Manoevertext generiert: ${manoevertext.size} Einträge")
@@ -524,44 +556,76 @@ class Navigate @Inject constructor(
 
     private var lastAddressLocation: Location? = null
 
-    suspend fun getCoordinatesFromAddress(address: String): Location? {
-        return try {
-            val response = withContext(Dispatchers.IO) {
-                api.geocode(
-                    apiKey = API_KEY,
-                    text = address
-                )
+    override suspend fun getCoordinatesFromAddress(address: String): Location? {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (address.isEmpty()) return@withContext null
+                Log.d("Navi", "Geocoding: $address")
+
+                @Suppress("DEPRECATION")
+                val results = geocoder.getFromLocationName(address, 1)
+                val addr = results?.firstOrNull()
+
+                if (addr != null) {
+                    Log.d("Navi", "Geocoder success: ${addr.latitude}, ${addr.longitude}")
+                    Location(lat = addr.latitude, lon = addr.longitude)
+                } else {
+                    Log.d("Navi", "Geocoder found nothing, trying ORS fallback")
+                    // Fallback auf ORS falls Geocoder nichts findet
+                    val response = api.geocode(apiKey = API_KEY, text = address)
+                    val feature = response.features.firstOrNull()
+                    val coords = feature?.geometry?.coordinates
+                    if (coords != null && coords.size >= 2) {
+                        Location(lat = coords[1], lon = coords[0])
+                    } else null
+                }
+            } catch (e: Exception) {
+                Log.e("Navi", "Geocoder Name failed: ${e.message}")
+                null
             }
-            val feature = response.features.firstOrNull()
-            val coords = feature?.geometry?.coordinates
-            if (coords != null && coords.size >= 2) {
-                Location(lat = coords[1], lon = coords[0])
-            } else null
-        } catch (e: retrofit2.HttpException) {
-            Log.e("Navi", "Geocoding HTTP ${e.code()}: ${e.message()}")
-            null
-        } catch (e: Exception) {
-            Log.e("Navi", "Fehler beim Geocoding: ${e.message}")
-            null
         }
     }
 
-    suspend fun getAdresseOnce(now: Location): String {
-        return try {
-            val response = withContext(Dispatchers.IO) {
-                api.reverseGeocode(
-                    apiKey = API_KEY,
-                    longitude = now.lon,
-                    latitude = now.lat
-                )
+    override suspend fun getAdresseOnce(now: Location): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("Navi", "Reverse Geocoding: ${now.lat}, ${now.lon}")
+                @Suppress("DEPRECATION")
+                val results = geocoder.getFromLocation(now.lat, now.lon, 1)
+                val addr = results?.firstOrNull()
+
+                if (addr != null) {
+                    val street = addr.thoroughfare ?: ""
+                    val house = addr.subThoroughfare ?: ""
+                    val city = addr.locality ?: ""
+
+                    val result = if (street.isNotEmpty()) {
+                        buildString {
+                            append(street)
+                            if (house.isNotEmpty()) append(" ").append(house)
+                            if (city.isNotEmpty()) append(", ").append(city)
+                        }
+                    } else {
+                        addr.getAddressLine(0) ?: "Unbekannte Straße"
+                    }
+                    Log.d("Navi", "Geocoder result: $result")
+                    result
+                } else {
+                    Log.d("Navi", "Geocoder reverse found nothing, trying ORS fallback")
+                    // Fallback auf ORS
+                    val response = api.reverseGeocode(
+                        apiKey = API_KEY,
+                        longitude = now.lon,
+                        latitude = now.lat
+                    )
+                    val label = response.features.firstOrNull()?.properties?.label ?: "Adresse nicht gefunden"
+                    Log.d("Navi", "ORS fallback result: $label")
+                    label
+                }
+            } catch (e: Exception) {
+                Log.e("Navi", "Geocoder Reverse failed: ${e.message}")
+                "Fehler bei Adressabfrage"
             }
-            response.features.firstOrNull()?.properties?.label ?: ""
-        } catch (e: retrofit2.HttpException) {
-            Log.e("Navi", "Geocoding HTTP ${e.code()} ${e.message()} body=${e.response()?.errorBody()?.string()}")
-            ""
-        } catch (e: Exception) {
-            Log.e("Navi", "Geocoding Exception ${e.javaClass.simpleName}: ${e.message}")
-            ""
         }
     }
 

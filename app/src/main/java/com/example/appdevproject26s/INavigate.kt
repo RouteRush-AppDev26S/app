@@ -14,9 +14,8 @@ interface INavigate
      *      Startet berechnete route
      */
     fun startRoute()
-    /**
-     * Letzte Route laden
-     */
+    fun routeReset()
+    suspend fun storeRoute()
     suspend fun loadLastRoute(): Trip?
     /*
     *   Aktualisiert alle variablen, wenn keine route aktiv ist verändert sich nur speedlimit
@@ -45,38 +44,26 @@ interface INavigate
      * Aktuelles SpeedLimit (beobachtbar)
      */
     val speedLimit: Int?
-    
-
-    /**
-     * Mautstraßen vermeiden
-     */
+    val currentAddress: String
+    val currentPosition: Location?
     var noMaut: Boolean
 
     /**
      * Autobahnen vermeiden
      */
     var noHighway: Boolean
-
-    /**
-     * Route beenden
-     */
+    var routeaktiv: Boolean
+    val currentTrip: Trip?
     fun stopRoute()
-
-    /**
-     * TextAusgabe der NavigationsAnweisungen
-     * im Format
-     * manoevertext.todrive restdistanz
-     * manoevertext.distance abstand des Segment zum nächsten
-     * manoevertext.todrivekm zurückzulegende kilometer bei Segment
-     */
+    //fun triggerVibration(duration: Long = 500)
+    suspend fun getCoordinatesFromAddress(address: String): Location?
+    suspend fun getAdresseOnce(now: Location): String
     var manoevertext: ArrayList<InstructionsNavigate>
 
     val startAddress: String
     val destinationAddress: String
     val isCalculating: Boolean
     val errorMessage: String?
-
-    fun isononePoint(von: Location,nach: Location):Double
-
-    fun routeNachAdresse(adresseStart:String,adresseStop:String)
+    fun isononePoint(von: Location, nach: Location): Double
+    fun routeNachAdresse(adresseStart: String, adresseStop: String)
 }

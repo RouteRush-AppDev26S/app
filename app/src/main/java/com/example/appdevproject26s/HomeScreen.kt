@@ -3,15 +3,26 @@ package com.example.appdevproject26s
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 
 @Composable
 fun HomeScreen(navController: NavController) {
     val viewModel: HomeScreenViewModel = hiltViewModel()
+    val isPlanningMode by viewModel.isPlanningMode.collectAsState()
+    val isSelectingDestination by viewModel.isSelectingDestination.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -39,6 +50,43 @@ fun HomeScreen(navController: NavController) {
         showBackButton = false,
         useInnerPadding = false
     ) { openDrawer ->
-        MapLayer(onMenuClick = { openDrawer() })
+        Box(modifier = Modifier.fillMaxSize()) {
+            MapLayer(onMenuClick = { openDrawer() })
+
+            if (isSelectingDestination) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 80.dp, start = 16.dp, end = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 8.dp
+                ) {
+                    Text(
+                        text = "Bitte Ziel auf der Karte lange drücken",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            } else {
+                FloatingActionButton(
+                    onClick = { viewModel.togglePlanningMode() },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Directions, contentDescription = "Routenplanung")
+                }
+            }
+
+            if (isPlanningMode) {
+                RoutePlanningPopup(
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.togglePlanningMode() }
+                )
+            }
+        }
     }
 }
+
