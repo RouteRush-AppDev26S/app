@@ -3,6 +3,7 @@ package com.example.appdevproject26s
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerState
@@ -95,6 +96,23 @@ fun NavDrawer(
                     }
                 )
                 HorizontalDivider()
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.profile_title)) },
+                    selected = currentRoute == "profile",
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = stringResource(R.string.profile_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("profile") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(R.string.settings_title)) },
                     selected = currentRoute == "settings",
