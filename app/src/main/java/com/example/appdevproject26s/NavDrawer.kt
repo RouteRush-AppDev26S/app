@@ -1,6 +1,7 @@
 package com.example.appdevproject26s
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
@@ -71,6 +72,23 @@ fun NavDrawer(
                     onClick = {
                         drawerStateScope.launch { drawerState.close() }
                         navController.navigate("route") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.messages_title)) },
+                    selected = currentRoute == "messaging",
+                    icon = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Message,
+                            contentDescription = stringResource(R.string.messages_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("messaging") {
                             popUpTo("home") { saveState = true }
                             launchSingleTop = true
                         }
