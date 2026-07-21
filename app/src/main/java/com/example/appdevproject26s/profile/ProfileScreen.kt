@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.appdevproject26s.ScreenScaffold
 
@@ -21,6 +23,11 @@ fun ProfileScreen(
     val authToken by profileViewModel.authToken.collectAsState(initial = null)
     val userProfile by profileViewModel.userProfile.collectAsState(initial = null)
     val isLoggedIn = !authToken.isNullOrBlank()
+
+    LaunchedEffect(authToken) {
+        if (!authToken.isNullOrBlank())
+        profileViewModel.fetchUserProfile()
+    }
 
     ScreenScaffold(
         navController = navController,

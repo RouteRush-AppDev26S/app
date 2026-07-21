@@ -48,19 +48,6 @@ class ProfileViewModel @Inject constructor(
     private val _isRegisterMode = MutableStateFlow(false)
     val isRegisterMode = _isRegisterMode.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            authRepository.tokenFlow.collect { token ->
-                if (!token.isNullOrBlank()) {
-                    fetchUserProfile()
-                } else {
-                    _userProfile.value = null
-                }
-
-            }
-        }
-    }
-
     fun fetchUserProfile() {
         viewModelScope.launch {
             userRepository.getCurrentUser().fold(
