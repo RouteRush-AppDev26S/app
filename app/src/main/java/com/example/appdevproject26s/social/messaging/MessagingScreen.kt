@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.appdevproject26s.R
 import com.example.appdevproject26s.ScreenScaffold
+import com.example.appdevproject26s.social.LoginPrompt
 
 @Composable
 fun MessagingScreen(
@@ -31,19 +32,10 @@ fun MessagingScreen(
         val isLoggedIn by messagingViewModel.isLoggedIn.collectAsState()
 
         if (!isLoggedIn) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-
-                Text("Register of login to use the message feature")
-
-                Button(onClick = { navController.navigate("profile") }) {
-                    Text("Register/Login")
-                }
-            }
-
+            LoginPrompt(
+                feature = "messaging",
+                onNavigateToLogin = { navController.navigate("profile") }
+            )
 
         } else {
             val chats = messagingViewModel.chats.collectAsState().value
