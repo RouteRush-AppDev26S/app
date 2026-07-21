@@ -78,4 +78,5 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation(libs.androidx.security.crypto)
+    implementation(libs.converter.scalars)
 }
