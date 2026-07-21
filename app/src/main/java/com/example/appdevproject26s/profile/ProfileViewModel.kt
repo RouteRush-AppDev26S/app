@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.auth.AuthState
+import com.example.appdevproject26s.user.UserProfileResponse
+import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     // Observe global login status from the repository
@@ -25,6 +28,9 @@ class ProfileViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
+
+    private val _userProfile = MutableStateFlow<UserProfileResponse?>(null)
+    val userProfile: StateFlow<UserProfileResponse?> = _userProfile.asStateFlow()
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState = _authState.asStateFlow()
@@ -42,9 +48,41 @@ class ProfileViewModel @Inject constructor(
     private val _isRegisterMode = MutableStateFlow(false)
     val isRegisterMode = _isRegisterMode.asStateFlow()
 
-    fun updateUsername (username: String) {
+    init {
+        viewModelScope.launch {
+            authRepository.tokenFlow.collect { token ->
+                if (!token.isNullOrBlank()) {
+                    fetchUserProfile()
+                } else {
+                    _userProfile.value = null
+                }
+
+            }
+        }
+    }
+
+    fun fetchUserProfile() {
+        viewModelScope.launch {
+            userRepository.getCurrentUser().fold(
+                onSuccess = { profile ->
+                    _userProfile.value = profile
+                },
+                onFailure = { error ->
+                    _userProfile.value = null
+
+                    if (error.localizedMessage?.contains("401") == true ||
+                        error.localizedMessage?.contains("Unauthorized") == true) {
+                        logout() // Automatically clear the expired token and send them back to login
+                    }
+                }
+            )
+        }
+    }
+
+    fun updateUsername(username: String) {
         _usernameInput.value = username
     }
+
     fun updateEmail(email: String) {
         _emailInput.value = email
     }
@@ -72,14 +110,18 @@ class ProfileViewModel @Inject constructor(
             _authState.value = AuthState.Loading
 
             val result = if (_isRegisterMode.value) {
-                authRepository.register(email, username,  password)
+                authRepository.register(email, username, password)
             } else {
                 authRepository.login(email, password)
             }
 
             _authState.value = result.fold(
                 onSuccess = { token -> AuthState.Success(token) },
-                onFailure = { error -> AuthState.Error(error.localizedMessage ?: "Operation failed") }
+                onFailure = { error ->
+                    AuthState.Error(
+                        error.localizedMessage ?: "Operation failed"
+                    )
+                }
             )
         }
     }
@@ -88,6 +130,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.logout()
             _authState.value = AuthState.Idle
+            _userProfile.value = null
         }
     }
 

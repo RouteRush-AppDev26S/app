@@ -19,6 +19,7 @@ fun ProfileScreen(
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val authToken by profileViewModel.authToken.collectAsState(initial = null)
+    val userProfile by profileViewModel.userProfile.collectAsState(initial = null)
     val isLoggedIn = !authToken.isNullOrBlank()
 
     ScreenScaffold(
@@ -35,6 +36,7 @@ fun ProfileScreen(
             if (isLoggedIn) {
                 // View 1: Logged-In User Profile Dashboard
                 UserProfileContent(
+                    userProfile = userProfile,
                     onLogout = { profileViewModel.logout() }
                 )
             } else {
