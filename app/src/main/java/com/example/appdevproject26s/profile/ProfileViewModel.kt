@@ -32,6 +32,9 @@ class ProfileViewModel @Inject constructor(
     private val _emailInput = MutableStateFlow("")
     val emailInput = _emailInput.asStateFlow()
 
+    private val _usernameInput = MutableStateFlow("")
+    val usernameInput = _usernameInput.asStateFlow()
+
     private val _passwordInput = MutableStateFlow("")
     val passwordInput = _passwordInput.asStateFlow()
 
@@ -39,6 +42,9 @@ class ProfileViewModel @Inject constructor(
     private val _isRegisterMode = MutableStateFlow(false)
     val isRegisterMode = _isRegisterMode.asStateFlow()
 
+    fun updateUsername (username: String) {
+        _usernameInput.value = username
+    }
     fun updateEmail(email: String) {
         _emailInput.value = email
     }
@@ -55,6 +61,7 @@ class ProfileViewModel @Inject constructor(
     fun submitAuth() {
         val email = _emailInput.value
         val password = _passwordInput.value
+        val username = _usernameInput.value
 
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty")

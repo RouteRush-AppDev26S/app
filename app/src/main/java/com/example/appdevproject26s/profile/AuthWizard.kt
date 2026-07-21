@@ -27,6 +27,7 @@ import com.example.appdevproject26s.auth.AuthState
 
 @Composable
 fun AuthWizardContent(viewModel: ProfileViewModel) {
+    val username by viewModel.usernameInput.collectAsState()
     val email by viewModel.emailInput.collectAsState()
     val password by viewModel.passwordInput.collectAsState()
     val authState by viewModel.authState.collectAsState()
@@ -60,6 +61,18 @@ fun AuthWizardContent(viewModel: ProfileViewModel) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (isRegisterMode) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { viewModel.updateUsername(it) },
+                    label = { Text("Username") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
