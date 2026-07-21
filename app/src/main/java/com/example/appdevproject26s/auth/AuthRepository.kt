@@ -31,18 +31,8 @@ class AuthRepository @Inject constructor(
 
             saveToken(token)
             Result.success(token)
-        } catch (e: retrofit2.HttpException) {
-            // Extract the exact error message sent from your Spring Boot backend
-            val errorBody = e.response()?.errorBody()?.string()
-            val errorMessage = if (!errorBody.isNullOrBlank()) {
-                errorBody.replace("\"", "") // Cleans up string quotes if returned as raw JSON text
-            } else {
-                e.localizedMessage ?: "Authentication failed"
-            }
-            Result.failure(Exception(errorMessage))
-        } catch (e: Exception) {
-            // Catches regular network drops, timeouts, etc.
-            Result.failure(Exception("Network error: Check your connection"))
+        } catch (e : Exception) {
+            Result.failure(parseHttpError(e, "Authentication failed"))
         }
     }
 
@@ -53,18 +43,8 @@ class AuthRepository @Inject constructor(
 
             saveToken(token)
             Result.success(token)
-        } catch (e: retrofit2.HttpException) {
-            // Extract the exact error message sent from your Spring Boot backend
-            val errorBody = e.response()?.errorBody()?.string()
-            val errorMessage = if (!errorBody.isNullOrBlank()) {
-                errorBody.replace("\"", "") // Cleans up string quotes if returned as raw JSON text
-            } else {
-                e.localizedMessage ?: "Authentication failed"
-            }
-            Result.failure(Exception(errorMessage))
         } catch (e: Exception) {
-            // Catches regular network drops, timeouts, etc.
-            Result.failure(Exception("Network error: Check your connection"))
+            Result.failure(parseHttpError(e, "Registration failed"))
         }
     }
 
