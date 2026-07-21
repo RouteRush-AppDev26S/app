@@ -2,6 +2,7 @@ package com.example.appdevproject26s.di
 
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
+import com.example.appdevproject26s.social.friends.FriendApiService
 import com.example.appdevproject26s.user.UserApiService
 import dagger.Module
 import dagger.Provides
@@ -48,5 +49,11 @@ object BackendNetworkModule {
     @Singleton
     fun provideUserApiService(retrofit: Retrofit): UserApiService {
         return retrofit.create(UserApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFriendApiService(retrofit: Retrofit): FriendApiService {
+        return retrofit.create(FriendApiService::class.java)
     }
 }
