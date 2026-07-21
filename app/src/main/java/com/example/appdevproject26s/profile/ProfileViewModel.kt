@@ -72,7 +72,7 @@ class ProfileViewModel @Inject constructor(
             _authState.value = AuthState.Loading
 
             val result = if (_isRegisterMode.value) {
-                authRepository.register(email, password)
+                authRepository.register(email, username,  password)
             } else {
                 authRepository.login(email, password)
             }

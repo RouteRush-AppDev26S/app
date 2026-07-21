@@ -14,7 +14,8 @@ private val Context.authDataStore by preferencesDataStore(name = "secure_auth_pr
 
 @Singleton
 class AuthRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val authApiService: AuthApiService
 ) {
     private val secureManager = SecureTokenManager()
 
@@ -29,23 +30,47 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun login(email: String, pass: String): Result<String> {
+    suspend fun login(username: String, pass: String): Result<String> {
         return try {
-            val mockToken = "mock_jwt_token_12345"
-            saveToken(mockToken)
-            Result.success(mockToken)
+            val request = LoginRequest(username = username, password = pass)
+            val token = authApiService.login(request)
+
+            saveToken(token)
+            Result.success(token)
+        } catch (e: retrofit2.HttpException) {
+            // Extract the exact error message sent from your Spring Boot backend
+            val errorBody = e.response()?.errorBody()?.string()
+            val errorMessage = if (!errorBody.isNullOrBlank()) {
+                errorBody.replace("\"", "") // Cleans up string quotes if returned as raw JSON text
+            } else {
+                e.localizedMessage ?: "Authentication failed"
+            }
+            Result.failure(Exception(errorMessage))
         } catch (e: Exception) {
-            Result.failure(e)
+            // Catches regular network drops, timeouts, etc.
+            Result.failure(Exception("Network error: Check your connection"))
         }
     }
 
-    suspend fun register(email: String, pass: String): Result<String> {
+    suspend fun register(email: String, username: String, pass: String): Result<String> {
         return try {
-            val mockToken = "mock_jwt_token_12345"
-            saveToken(mockToken)
-            Result.success(mockToken)
+            val request = RegisterRequest(email = email, username = username, password = pass)
+            val token = authApiService.register(request)
+
+            saveToken(token)
+            Result.success(token)
+        } catch (e: retrofit2.HttpException) {
+            // Extract the exact error message sent from your Spring Boot backend
+            val errorBody = e.response()?.errorBody()?.string()
+            val errorMessage = if (!errorBody.isNullOrBlank()) {
+                errorBody.replace("\"", "") // Cleans up string quotes if returned as raw JSON text
+            } else {
+                e.localizedMessage ?: "Authentication failed"
+            }
+            Result.failure(Exception(errorMessage))
         } catch (e: Exception) {
-            Result.failure(e)
+            // Catches regular network drops, timeouts, etc.
+            Result.failure(Exception("Network error: Check your connection"))
         }
     }
 
