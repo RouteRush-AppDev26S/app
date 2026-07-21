@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.social
+package com.example.appdevproject26s.social.messaging
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -10,7 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.appdevproject26s.profile.ProfileScreen
-import com.example.appdevproject26s.social.MessagingScreen
+import com.example.appdevproject26s.social.messaging.MessagingScreen
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 import dagger.hilt.android.AndroidEntryPoint
 
