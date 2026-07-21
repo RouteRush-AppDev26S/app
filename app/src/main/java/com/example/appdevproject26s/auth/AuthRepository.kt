@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.authDataStore by preferencesDataStore(name = "secure_auth_prefs")
-
 @Singleton
 class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -19,13 +17,9 @@ class AuthRepository @Inject constructor(
 ) {
     private val secureManager = SecureTokenManager()
 
-    private object PreferencesKeys {
-        val ENCRYPTED_JWT_TOKEN = stringPreferencesKey("encrypted_jwt_token")
-    }
-
     // Expose the decrypted token reactively
     val tokenFlow: Flow<String?> = context.authDataStore.data.map { preferences ->
-        preferences[PreferencesKeys.ENCRYPTED_JWT_TOKEN]?.let { encryptedStr ->
+        preferences[AuthPreferencesKeys.ENCRYPTED_JWT_TOKEN]?.let { encryptedStr ->
             secureManager.decrypt(encryptedStr)
         }
     }
@@ -77,13 +71,13 @@ class AuthRepository @Inject constructor(
     private suspend fun saveToken(token: String) {
         val encryptedToken = secureManager.encrypt(token)
         context.authDataStore.edit { preferences ->
-            preferences[PreferencesKeys.ENCRYPTED_JWT_TOKEN] = encryptedToken
+            preferences[AuthPreferencesKeys.ENCRYPTED_JWT_TOKEN] = encryptedToken
         }
     }
 
     suspend fun logout() {
         context.authDataStore.edit { preferences ->
-            preferences.remove(PreferencesKeys.ENCRYPTED_JWT_TOKEN)
+            preferences.remove(AuthPreferencesKeys.ENCRYPTED_JWT_TOKEN)
         }
     }
 }
