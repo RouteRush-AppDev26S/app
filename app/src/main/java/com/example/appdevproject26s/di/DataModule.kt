@@ -1,8 +1,11 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.example.appdevproject26s.LeaderboardApi
+import com.example.appdevproject26s.MapSettingsRepository
+import com.example.appdevproject26s.dataStore
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import dagger.Module

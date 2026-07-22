@@ -4,4 +4,7 @@
     <string name="route_title">Route</string>
     <string name="leaderboard_title">Leaderboard</string>
     <string name="settings_title">Settings</string>
+    <string name="messages_title">Messages</string>
+    <string name="profile_title">Profile</string>
+    <string name="friends_title">Friends</string>
 </resources>
