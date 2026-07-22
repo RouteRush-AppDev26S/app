@@ -29,13 +29,6 @@ class ProfileViewModel @Inject constructor(
             initialValue = false
         )
 
-    val authToken: StateFlow<String?> = authRepository.tokenFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
-
     private val _userProfile = MutableStateFlow<UserProfileResponse?>(null)
     val userProfile: StateFlow<UserProfileResponse?> = _userProfile.asStateFlow()
 
@@ -54,6 +47,16 @@ class ProfileViewModel @Inject constructor(
     // Tracks whether the wizard is currently in Register mode (true) or Login mode (false)
     private val _isRegisterMode = MutableStateFlow(false)
     val isRegisterMode = _isRegisterMode.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.savedUsernameFlow.collect { username ->
+                if (!username.isNullOrBlank() && _usernameInput.value.isBlank()) {
+                    _usernameInput.value = username
+                }
+            }
+        }
+    }
 
     fun fetchUserProfile() {
         viewModelScope.launch {

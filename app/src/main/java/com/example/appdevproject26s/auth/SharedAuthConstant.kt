@@ -8,4 +8,5 @@ val Context.authDataStore by preferencesDataStore(name = "secure_auth_prefs")
 
 object AuthPreferencesKeys {
     val ENCRYPTED_JWT_TOKEN = stringPreferencesKey("encrypted_jwt_token")
+    val SAVED_USERNAME = stringPreferencesKey("saved_username")
 }

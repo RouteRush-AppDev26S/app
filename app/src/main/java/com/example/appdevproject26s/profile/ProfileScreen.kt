@@ -20,13 +20,13 @@ fun ProfileScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val authToken by profileViewModel.authToken.collectAsState(initial = null)
     val userProfile by profileViewModel.userProfile.collectAsState(initial = null)
     val isLoggedIn by profileViewModel.isLoggedIn.collectAsState(initial = false)
 
-    LaunchedEffect(authToken) {
-        if (!authToken.isNullOrBlank())
-        profileViewModel.fetchUserProfile()
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            profileViewModel.fetchUserProfile()
+        }
     }
 
     ScreenScaffold(
