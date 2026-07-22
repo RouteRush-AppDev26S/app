@@ -3,7 +3,6 @@ package com.example.appdevproject26s.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.example.appdevproject26s.LeaderboardApi
 import com.example.appdevproject26s.MapSettingsRepository
 import com.example.appdevproject26s.dataStore
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -13,13 +12,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DataModule {
+object LocalDataModule {
 
     @Provides
     @Singleton
