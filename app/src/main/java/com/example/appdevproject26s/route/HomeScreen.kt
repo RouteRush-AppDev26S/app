@@ -1,4 +1,4 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.route
 
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,6 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.appdevproject26s.R
+import com.example.appdevproject26s.ScreenScaffold
 
 @Composable
 fun HomeScreen(navController: NavController) {

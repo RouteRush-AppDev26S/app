@@ -1,8 +1,7 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.route
 
 
 import org.maplibre.spatialk.geojson.Position
-import com.example.appdevproject26s.navigate.*
 
 interface INavigate
 {

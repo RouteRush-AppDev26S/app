@@ -1,4 +1,4 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.route
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.appdevproject26s.navigate.InstructionsNavigate
-import com.example.appdevproject26s.navigate.Navigate
+import com.example.appdevproject26s.R
+import com.example.appdevproject26s.ScreenScaffold
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlin.text.split

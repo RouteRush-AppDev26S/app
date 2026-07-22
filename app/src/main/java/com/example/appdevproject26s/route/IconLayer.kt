@@ -1,4 +1,4 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.route
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

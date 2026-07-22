@@ -1,4 +1,4 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.gamification.leaderboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -12,6 +12,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -22,14 +23,31 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.example.appdevproject26s.R
+import com.example.appdevproject26s.ScreenScaffold
+import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.social.LoginPrompt
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class LeaderboardViewModel @Inject constructor(
-    private val api: LeaderboardApi
+    private val api: LeaderboardApi,
+    authRepo: AuthRepository
 ) : ViewModel() {
+
+    val isLoggedIn: StateFlow<Boolean> = authRepo.tokenFlow
+        .map { !it.isNullOrBlank() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     var entries by mutableStateOf<List<LeaderboardEntry>>(emptyList())
         private set
@@ -59,12 +77,19 @@ fun LeaderboardScreen(
     navController: NavController,
     viewModel: LeaderboardViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.load()
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) viewModel.load()
     }
 
     ScreenScaffold(navController = navController, title = stringResource(R.string.leaderboard_title)) {
-        if (viewModel.isLoading) {
+        if (!isLoggedIn) {
+            LoginPrompt(
+                feature = "the leaderboard",
+                onNavigateToLogin = { navController.navigate("profile") }
+            )
+        } else if (viewModel.isLoading) {
             CircularProgressIndicator()
         } else if (viewModel.errorMessage != null) {
             Text("Error: ${viewModel.errorMessage}")
