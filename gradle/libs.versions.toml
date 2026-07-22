@@ -1,5 +1,6 @@
 [versions]
 agp = "9.2.1"
+converterScalars = "3.0.0"
 coreKtx = "1.18.0"
 datastorePreferences = "1.2.1"
 junit = "4.13.2"
@@ -18,12 +19,15 @@ hilt = "2.59.2"
 remoteCreationCore = "1.0.0-alpha11"
 hiltNavigationCompose = "1.2.0"
 playServicesLocation = "21.3.0"
+securityCrypto = "1.1.0"
 
 [libraries]
 
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "converterScalars" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

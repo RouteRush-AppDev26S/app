@@ -1,9 +1,12 @@
 package com.example.appdevproject26s
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerState
@@ -111,7 +114,58 @@ fun NavDrawer(
                         }
                     }
                 )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.messages_title)) },
+                    selected = currentRoute == "messaging",
+                    icon = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Message,
+                            contentDescription = stringResource(R.string.messages_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("messaging") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.friends_title)) },
+                    selected = currentRoute == "friends",
+                    icon = {
+                        Icon(
+                            Icons.Default.People,
+                            contentDescription = stringResource(R.string.friends_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("friends") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
                 HorizontalDivider()
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.profile_title)) },
+                    selected = currentRoute == "profile",
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = stringResource(R.string.profile_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("profile") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(R.string.settings_title)) },
                     selected = currentRoute == "settings",
@@ -140,4 +194,3 @@ fun NavDrawer(
 
 
 }
-

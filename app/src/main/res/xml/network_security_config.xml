@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Allow cleartext traffic to local computer IP address -->
+        <domain includeSubdomains="true">192.168.1.19</domain> <!-- Replace with server's actual IP -->
+        <!-- Also keep localhost in for use with an emulator -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
