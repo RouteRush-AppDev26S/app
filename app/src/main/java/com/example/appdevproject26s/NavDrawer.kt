@@ -1,6 +1,7 @@
 package com.example.appdevproject26s
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
@@ -52,7 +53,6 @@ fun NavDrawer(
                     },
                     onClick = {
                         drawerStateScope.launch { drawerState.close() }
-                        // clear back stack. home is the root
                         navController.navigate("home") {
                             popUpTo(startDestinationRoute) { saveState = true }
                             launchSingleTop = true
@@ -71,6 +71,23 @@ fun NavDrawer(
                     onClick = {
                         drawerStateScope.launch { drawerState.close() }
                         navController.navigate("route") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.leaderboard_title)) },
+                    selected = currentRoute == "leaderboard",
+                    icon = {
+                        Icon(
+                            Icons.Default.EmojiEvents,
+                            contentDescription = stringResource(R.string.leaderboard_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("leaderboard") {
                             popUpTo("home") { saveState = true }
                             launchSingleTop = true
                         }

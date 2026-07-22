@@ -1,6 +1,5 @@
 package com.example.appdevproject26s
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,11 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.appdevproject26s.navigate.Navigate
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -37,6 +34,7 @@ fun NavigationApp(modifier: Modifier = Modifier) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable( route = "route" ) { RouteScreen(navController) }
+        composable("leaderboard") { LeaderboardScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
     }
 }
