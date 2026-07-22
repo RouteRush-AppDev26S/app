@@ -33,6 +33,16 @@ object DataModule {
 
     @Provides
     @Singleton
+    fun provideChallengeApi(): ChallengeApi {
+        return Retrofit.Builder()
+            .baseUrl(BACKEND_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ChallengeApi::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
         return context.dataStore
     }
