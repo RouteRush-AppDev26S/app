@@ -18,6 +18,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object BackendNetworkModule {
 
+    private const val BACKEND_BASE_URL = "https://backend-g7be.onrender.com/"
+
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
@@ -30,8 +32,7 @@ object BackendNetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-//            .baseUrl("http://10.0.2.2:9000/") // pointing to emulator address for testingg
-            .baseUrl("http://192.168.1.19:9000/")
+            .baseUrl(BACKEND_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
