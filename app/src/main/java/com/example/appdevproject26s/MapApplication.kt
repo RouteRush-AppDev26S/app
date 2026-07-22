@@ -1,7 +1,7 @@
 package com.example.appdevproject26s
 
 import android.app.Application
-import com.example.appdevproject26s.navigate.Navigate
+import com.example.appdevproject26s.route.Navigate
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp

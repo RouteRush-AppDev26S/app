@@ -2,7 +2,7 @@
 *                    Written by Hans Wornik
 *           Implementation of the TimeManagnment
  */
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.route
 
 import org.maplibre.spatialk.geojson.Position
 import kotlin.math.*

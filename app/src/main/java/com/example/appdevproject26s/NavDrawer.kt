@@ -1,8 +1,9 @@
 package com.example.appdevproject26s
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -97,6 +98,23 @@ fun NavDrawer(
                     }
                 )
                 NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.challenge_title)) },
+                    selected = currentRoute == "challenge",
+                    icon = {
+                        Icon(
+                            Icons.Default.Flag,
+                            contentDescription = stringResource(R.string.challenge_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("challenge") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
                     label = { Text(text = stringResource(R.string.messages_title)) },
                     selected = currentRoute == "messaging",
                     icon = {
@@ -176,4 +194,3 @@ fun NavDrawer(
 
 
 }
-

@@ -1,6 +1,7 @@
-package com.example.appdevproject26s.di
+package com.example.appdevproject26s.modules
 
-import com.example.appdevproject26s.LeaderboardApi
+import com.example.appdevproject26s.gamification.challenges.ChallengeApi
+import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
 import com.example.appdevproject26s.social.friends.FriendApiService
@@ -64,5 +65,11 @@ object BackendNetworkModule {
     @Singleton
     fun provideLeaderboardApi(retrofit: Retrofit): LeaderboardApi {
         return retrofit.create(LeaderboardApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChallengeApi(retrofit: Retrofit): ChallengeApi {
+        return retrofit.create(ChallengeApi::class.java)
     }
 }

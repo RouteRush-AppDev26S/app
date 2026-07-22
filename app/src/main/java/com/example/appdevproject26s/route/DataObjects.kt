@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.route
 
 import com.google.gson.annotations.SerializedName
 import okhttp3.FormBody

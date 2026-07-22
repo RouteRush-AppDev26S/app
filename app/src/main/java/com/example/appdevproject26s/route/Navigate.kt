@@ -2,7 +2,7 @@
 *                    Written by Hans Wornik
 *           Implementation of the Navigate Interface
  */
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.route
 
 import android.content.Context
 import android.location.Geocoder
@@ -12,13 +12,11 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import com.google.gson.Gson
 import org.maplibre.spatialk.geojson.Position
-import com.example.appdevproject26s.INavigate
 
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.appdevproject26s.navigate.Zeitberechnung
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

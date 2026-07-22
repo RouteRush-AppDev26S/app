@@ -9,13 +9,16 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.appdevproject26s.gamification.challenges.ChallengeScreen
+import com.example.appdevproject26s.gamification.leaderboard.LeaderboardScreen
 import com.example.appdevproject26s.profile.ProfileScreen
+import com.example.appdevproject26s.route.HomeScreen
+import com.example.appdevproject26s.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
 import com.example.appdevproject26s.social.messaging.MessagingScreen
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,6 +45,7 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("friends") { FriendsScreen(navController = navController) }
         composable("profile") { ProfileScreen(navController = navController) }
         composable("leaderboard") { LeaderboardScreen(navController) }
+        composable("challenge") { ChallengeScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
     }
 }

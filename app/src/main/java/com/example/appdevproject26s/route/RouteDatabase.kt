@@ -3,7 +3,7 @@
 *           Implementation of the Route Database
  */
 
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.route
 
 import androidx.room.Dao
 import androidx.room.Database
