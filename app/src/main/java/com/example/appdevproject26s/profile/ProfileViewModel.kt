@@ -95,9 +95,18 @@ class ProfileViewModel @Inject constructor(
         val password = _passwordInput.value
         val username = _usernameInput.value
 
-        if (email.isBlank() || password.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
-            return
+        if (!_isRegisterMode.value) {
+            if (username.isBlank() || password.isBlank()) {
+                _authState.value = AuthState.Error("username and password cannot be empty")
+                return
+            }
+        }
+
+        if (_isRegisterMode.value) {
+            if (username.isBlank() || password.isBlank() || email.isBlank()) {
+                _authState.value = AuthState.Error("email, username and password cannot be empty")
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -106,7 +115,7 @@ class ProfileViewModel @Inject constructor(
             val result = if (_isRegisterMode.value) {
                 authRepository.register(email, username, password)
             } else {
-                authRepository.login(email, password)
+                authRepository.login(username, password)
             }
 
             _authState.value = result.fold(
