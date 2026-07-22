@@ -22,11 +22,11 @@ class ProfileViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Observe global login status from the repository
-    val authToken: StateFlow<String?> = authRepository.tokenFlow
+    val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = false
         )
 
     private val _userProfile = MutableStateFlow<UserProfileResponse?>(null)
@@ -47,6 +47,16 @@ class ProfileViewModel @Inject constructor(
     // Tracks whether the wizard is currently in Register mode (true) or Login mode (false)
     private val _isRegisterMode = MutableStateFlow(false)
     val isRegisterMode = _isRegisterMode.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.savedUsernameFlow.collect { username ->
+                if (!username.isNullOrBlank() && _usernameInput.value.isBlank()) {
+                    _usernameInput.value = username
+                }
+            }
+        }
+    }
 
     fun fetchUserProfile() {
         viewModelScope.launch {
@@ -88,9 +98,18 @@ class ProfileViewModel @Inject constructor(
         val password = _passwordInput.value
         val username = _usernameInput.value
 
-        if (email.isBlank() || password.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
-            return
+        if (!_isRegisterMode.value) {
+            if (username.isBlank() || password.isBlank()) {
+                _authState.value = AuthState.Error("username and password cannot be empty")
+                return
+            }
+        }
+
+        if (_isRegisterMode.value) {
+            if (username.isBlank() || password.isBlank() || email.isBlank()) {
+                _authState.value = AuthState.Error("email, username and password cannot be empty")
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -99,11 +118,14 @@ class ProfileViewModel @Inject constructor(
             val result = if (_isRegisterMode.value) {
                 authRepository.register(email, username, password)
             } else {
-                authRepository.login(email, password)
+                authRepository.login(username, password)
             }
 
             _authState.value = result.fold(
-                onSuccess = { token -> AuthState.Success(token) },
+                onSuccess = { token ->
+                    _isRegisterMode.value = false
+                    _passwordInput.value = ""
+                    AuthState.Success(token) },
                 onFailure = { error ->
                     AuthState.Error(
                         error.localizedMessage ?: "Operation failed"
@@ -118,6 +140,8 @@ class ProfileViewModel @Inject constructor(
             authRepository.logout()
             _authState.value = AuthState.Idle
             _userProfile.value = null
+            _isRegisterMode.value = false
+            _passwordInput.value = ""
         }
     }
 

@@ -66,9 +66,9 @@ fun AuthWizardContent(viewModel: ProfileViewModel) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { viewModel.updateUsername(it) },
-                    label = { Text("Username") },
+                    value = email,
+                    onValueChange = { viewModel.updateEmail(it) },
+                    label = { Text("Email") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -77,9 +77,9 @@ fun AuthWizardContent(viewModel: ProfileViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
-                value = email,
-                onValueChange = { viewModel.updateEmail(it) },
-                label = { Text("Email") },
+                value = username,
+                onValueChange = { viewModel.updateUsername(it) },
+                label = { Text("Username") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )

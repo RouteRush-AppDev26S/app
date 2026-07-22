@@ -21,8 +21,7 @@ class MessagingScreenViewModel @Inject constructor(
 
 ) : ViewModel() {
 
-    val isLoggedIn: StateFlow<Boolean> = authRepo.tokenFlow
-        .map { !it.isNullOrBlank() }
+    val isLoggedIn: StateFlow<Boolean> = authRepo.isLoggedInFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
