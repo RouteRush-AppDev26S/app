@@ -1,5 +1,6 @@
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.modules
 
+import com.example.appdevproject26s.route.OrsApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

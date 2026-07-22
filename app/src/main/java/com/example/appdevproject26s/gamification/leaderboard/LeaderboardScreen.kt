@@ -1,10 +1,14 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.gamification.leaderboard
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,16 +22,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.example.appdevproject26s.R
+import com.example.appdevproject26s.ScreenScaffold
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ChallengeViewModel @Inject constructor(
-    private val api: ChallengeApi
+class LeaderboardViewModel @Inject constructor(
+    private val api: LeaderboardApi
 ) : ViewModel() {
 
-    var challenge by mutableStateOf<WeeklyChallenge?>(null)
+    var entries by mutableStateOf<List<LeaderboardEntry>>(emptyList())
         private set
     var isLoading by mutableStateOf(true)
         private set
@@ -40,7 +46,7 @@ class ChallengeViewModel @Inject constructor(
             errorMessage = null
 
             try {
-                challenge = api.getCurrentChallenge()
+                entries = api.getLeaderboard()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Failed to load"
             }
@@ -51,39 +57,44 @@ class ChallengeViewModel @Inject constructor(
 }
 
 @Composable
-fun ChallengeScreen(
+fun LeaderboardScreen(
     navController: NavController,
-    viewModel: ChallengeViewModel = hiltViewModel()
+    viewModel: LeaderboardViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
         viewModel.load()
     }
 
-    ScreenScaffold(navController = navController, title = stringResource(R.string.challenge_title)) {
+    ScreenScaffold(navController = navController, title = stringResource(R.string.leaderboard_title)) {
         if (viewModel.isLoading) {
             CircularProgressIndicator()
         } else if (viewModel.errorMessage != null) {
             Text("Error: ${viewModel.errorMessage}")
         } else {
-            viewModel.challenge?.let { ChallengeDetails(it) }
+            LeaderboardList(viewModel.entries)
         }
     }
 }
 
 @Composable
-fun ChallengeDetails(challenge: WeeklyChallenge) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Text(challenge.description)
-
-        LinearProgressIndicator(
-            progress = { challenge.currentProgress.toFloat() / challenge.target.toFloat() },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-        )
-
-        Text("${challenge.currentProgress} / ${challenge.target}")
-
-        if (challenge.completed) {
-            Text("Completed!")
+fun LeaderboardList(entries: List<LeaderboardEntry>) {
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        items(entries) { entry ->
+            LeaderboardRow(entry)
+            HorizontalDivider()
         }
+    }
+}
+
+@Composable
+fun LeaderboardRow(entry: LeaderboardEntry) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("#${entry.rank} ${entry.username}")
+        Text("Level ${entry.level} - ${entry.xp} XP")
     }
 }

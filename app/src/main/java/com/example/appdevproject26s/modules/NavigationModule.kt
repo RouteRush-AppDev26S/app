@@ -1,10 +1,13 @@
-package com.example.appdevproject26s.navigate
+package com.example.appdevproject26s.modules
 
 import android.content.Context
 import android.os.Build
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.room.Room
+import com.example.appdevproject26s.route.RouteDao
+import com.example.appdevproject26s.route.RouteDatabase
+import com.example.appdevproject26s.route.Zeitberechnung
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

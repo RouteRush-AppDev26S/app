@@ -1,4 +1,4 @@
-package com.example.appdevproject26s
+package com.example.appdevproject26s.gamification.challenges
 
 import retrofit2.http.GET
 
