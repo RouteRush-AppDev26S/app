@@ -21,19 +21,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DataModule {
 
-    // Backend URL
-    private const val BACKEND_BASE_URL = "https://backend-g7be.onrender.com/"
-
-    @Provides
-    @Singleton
-    fun provideLeaderboardApi(): LeaderboardApi {
-        return Retrofit.Builder()
-            .baseUrl(BACKEND_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(LeaderboardApi::class.java)
-    }
-
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
