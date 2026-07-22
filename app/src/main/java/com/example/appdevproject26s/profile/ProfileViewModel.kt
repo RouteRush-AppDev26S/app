@@ -119,7 +119,10 @@ class ProfileViewModel @Inject constructor(
             }
 
             _authState.value = result.fold(
-                onSuccess = { token -> AuthState.Success(token) },
+                onSuccess = { token ->
+                    _isRegisterMode.value = false
+                    _passwordInput.value = ""
+                    AuthState.Success(token) },
                 onFailure = { error ->
                     AuthState.Error(
                         error.localizedMessage ?: "Operation failed"
@@ -134,6 +137,8 @@ class ProfileViewModel @Inject constructor(
             authRepository.logout()
             _authState.value = AuthState.Idle
             _userProfile.value = null
+            _isRegisterMode.value = false
+            _passwordInput.value = ""
         }
     }
 
