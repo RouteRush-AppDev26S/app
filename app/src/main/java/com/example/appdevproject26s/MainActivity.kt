@@ -35,6 +35,7 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("home") { HomeScreen(navController) }
         composable( route = "route" ) { RouteScreen(navController) }
         composable("leaderboard") { LeaderboardScreen(navController) }
+        composable("challenge") { ChallengeScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
     }
 }
