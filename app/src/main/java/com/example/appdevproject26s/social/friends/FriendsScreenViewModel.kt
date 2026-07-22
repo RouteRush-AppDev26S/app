@@ -25,17 +25,15 @@ sealed interface FriendsUiState {
 @HiltViewModel
 class FriendsScreenViewModel @Inject constructor(
     private val friendRepository: FriendRepository,
-    authRepo: AuthRepository
+    authRepository: AuthRepository
 ) : ViewModel() {
 
-    val isLoggedIn: StateFlow<Boolean> = authRepo.tokenFlow
-        .map { !it.isNullOrBlank() }
+    val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
-
     private val _uiState = MutableStateFlow<FriendsUiState>(FriendsUiState.Loading)
     val uiState: StateFlow<FriendsUiState> = _uiState.asStateFlow()
 

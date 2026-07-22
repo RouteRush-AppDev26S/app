@@ -24,6 +24,14 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    val isLoggedInFlow: Flow<Boolean> = tokenFlow.map { token ->
+        if (token.isNullOrBlank()) {
+            false
+        } else {
+            !isTokenExpired(token)
+        }
+    }
+
     suspend fun login(username: String, pass: String): Result<String> {
         return try {
             val request = LoginRequest(username = username, password = pass)
@@ -59,5 +67,24 @@ class AuthRepository @Inject constructor(
         context.authDataStore.edit { preferences ->
             preferences.remove(AuthPreferencesKeys.ENCRYPTED_JWT_TOKEN)
         }
+    }
+}
+
+private fun isTokenExpired(token: String): Boolean {
+    return try {
+        val parts = token.split(".")
+        if (parts.size != 3) return true
+
+        // Decode the payload (middle part)
+        val payloadBytes = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
+        val payloadString = String(payloadBytes, Charsets.UTF_8)
+
+        val jsonObject = org.json.JSONObject(payloadString)
+        val expirationTimeSeconds = jsonObject.optLong("exp", 0)
+        val currentTimeSeconds = System.currentTimeMillis() / 1000
+
+        currentTimeSeconds >= expirationTimeSeconds
+    } catch (e: Exception) {
+        true
     }
 }

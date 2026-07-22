@@ -22,6 +22,13 @@ class ProfileViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Observe global login status from the repository
+    val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
     val authToken: StateFlow<String?> = authRepository.tokenFlow
         .stateIn(
             scope = viewModelScope,
