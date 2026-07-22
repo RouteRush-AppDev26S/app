@@ -10,11 +10,26 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
+
+    // Backend URL
+    private const val BACKEND_BASE_URL = "https://backend-g7be.onrender.com/"
+
+    @Provides
+    @Singleton
+    fun provideLeaderboardApi(): LeaderboardApi {
+        return Retrofit.Builder()
+            .baseUrl(BACKEND_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(LeaderboardApi::class.java)
+    }
 
     @Provides
     @Singleton
