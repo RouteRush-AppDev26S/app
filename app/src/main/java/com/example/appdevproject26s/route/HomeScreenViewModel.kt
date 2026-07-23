@@ -2,13 +2,13 @@ package com.example.appdevproject26s.route
 
 import android.annotation.SuppressLint
 import android.os.Looper
-import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.steps.StepsRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -17,9 +17,13 @@ import com.google.android.gms.location.Priority
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
@@ -32,13 +36,38 @@ const val PIXELS_PER_TILE = 256
 class HomeScreenViewModel @Inject constructor(
     private val repository: MapSettingsRepository,
     private val navigate: Navigate,
-    private val locationClient: FusedLocationProviderClient
+    private val locationClient: FusedLocationProviderClient,
+    private val stepsRepository: StepsRepository,
+    authRepo: AuthRepository
 ) : ViewModel() {
+
+    val isLoggedIn: StateFlow<Boolean> = authRepo.tokenFlow
+        .map { !it.isNullOrBlank() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    val stepsReadPermission: String get() = stepsRepository.readStepsPermission
+
+    fun isHealthConnectAvailable(): Boolean = stepsRepository.isHealthConnectAvailable()
+
+    suspend fun hasStepsPermission(): Boolean = stepsRepository.hasStepsPermission()
+
+    fun syncSteps() {
+        viewModelScope.launch {
+            try {
+                stepsRepository.syncTodaySteps()
+            } catch (e: Exception) {
+            }
+        }
+    }
+
     private val defaultPos = CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0)
     private val _fullscreen = MutableStateFlow<Boolean>(false)
     val fullscreen = _fullscreen.asStateFlow()
     var cameraState = CameraState(firstPosition = defaultPos)
-
 
 
     val routePoints get() = navigate.routePoints
@@ -171,22 +200,28 @@ class HomeScreenViewModel @Inject constructor(
 
     fun calculateRouteFromPlanning() {
         viewModelScope.launch {
-            val startLoc = originalStartLoc ?: navigate.getCoordinatesFromAddress(_startAddressInput.value)
+            val startLoc =
+                originalStartLoc ?: navigate.getCoordinatesFromAddress(_startAddressInput.value)
             if (startLoc == null) return@launch
 
             val destTexts = _destinations.value
             val destLocs = originalDestLocs
 
             // First leg: Start to first destination
-            val firstLegDest = destLocs.getOrNull(0) ?: navigate.getCoordinatesFromAddress(destTexts.getOrNull(0) ?: "")
+            val firstLegDest = destLocs.getOrNull(0) ?: navigate.getCoordinatesFromAddress(
+                destTexts.getOrNull(0) ?: ""
+            )
             if (firstLegDest != null) {
                 navigate.calcRoute(startLoc, firstLegDest, _selectedVehicle.value)
                 awaitCalculation()
 
                 // Additional legs (Zwischenziele)
                 for (i in 0 until destLocs.size - 1) {
-                    val from = destLocs[i] ?: navigate.getCoordinatesFromAddress(destTexts.getOrNull(i) ?: "")
-                    val to = destLocs[i+1] ?: navigate.getCoordinatesFromAddress(destTexts.getOrNull(i+1) ?: "")
+                    val from = destLocs[i] ?: navigate.getCoordinatesFromAddress(
+                        destTexts.getOrNull(i) ?: ""
+                    )
+                    val to = destLocs[i + 1]
+                        ?: navigate.getCoordinatesFromAddress(destTexts.getOrNull(i + 1) ?: "")
 
                     if (from != null && to != null) {
                         navigate.calcRoute(from, to, _selectedVehicle.value)
@@ -196,7 +231,9 @@ class HomeScreenViewModel @Inject constructor(
 
                 // Final leg: back to start if it's a round trip
                 if (_isRoundTrip.value) {
-                    val lastLoc = destLocs.lastOrNull() ?: navigate.getCoordinatesFromAddress(destTexts.lastOrNull() ?: "")
+                    val lastLoc = destLocs.lastOrNull() ?: navigate.getCoordinatesFromAddress(
+                        destTexts.lastOrNull() ?: ""
+                    )
                     if (lastLoc != null) {
                         navigate.calcRoute(lastLoc, startLoc, _selectedVehicle.value)
                         awaitCalculation()
@@ -290,7 +327,8 @@ class HomeScreenViewModel @Inject constructor(
                 updatePlanningPoints()
             }
         } else {
-            val startLocation = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
+            val startLocation =
+                _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
             openPlanningWithLocations(startLocation, tappedLoc)
         }
     }
