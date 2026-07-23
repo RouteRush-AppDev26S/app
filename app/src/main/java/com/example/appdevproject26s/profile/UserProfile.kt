@@ -15,6 +15,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,10 +72,14 @@ fun UserProfileContent(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "XP: ${userProfile.xp}",
+                            text = "${userProfile.xpIntoLevel} / ${userProfile.xpForNextLevel} XP",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                    LinearProgressIndicator(
+                        progress = { userProfile.xpIntoLevel.toFloat() / userProfile.xpForNextLevel.toFloat() },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     if (userProfile.admin) {
                         Text(
                             text = "Role: Administrator",

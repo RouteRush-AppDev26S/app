@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ fun HomeScreen(navController: NavController) {
     val viewModel: HomeScreenViewModel = hiltViewModel()
     val isPlanningMode by viewModel.isPlanningMode.collectAsState()
     val isSelectingDestination by viewModel.isSelectingDestination.collectAsState()
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -39,6 +41,14 @@ fun HomeScreen(navController: NavController) {
         }
     }
 
+    val stepsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        if (granted.contains(viewModel.stepsReadPermission)) {
+            viewModel.syncSteps()
+        }
+    }
+
     LaunchedEffect(Unit) {
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -48,6 +58,16 @@ fun HomeScreen(navController: NavController) {
             permissions.add(Manifest.permission.ACTIVITY_RECOGNITION)
         }
         permissionLauncher.launch(permissions.toTypedArray())
+    }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn && viewModel.isHealthConnectAvailable()) {
+            if (viewModel.hasStepsPermission()) {
+                viewModel.syncSteps()
+            } else {
+                stepsPermissionLauncher.launch(setOf(viewModel.stepsReadPermission))
+            }
+        }
     }
 
     ScreenScaffold(

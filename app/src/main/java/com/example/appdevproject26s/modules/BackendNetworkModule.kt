@@ -1,10 +1,12 @@
 package com.example.appdevproject26s.modules
 
+import com.example.appdevproject26s.gamification.achievements.AchievementApi
 import com.example.appdevproject26s.gamification.challenges.ChallengeApi
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
 import com.example.appdevproject26s.social.friends.FriendApiService
+import com.example.appdevproject26s.steps.StepsApi
 import com.example.appdevproject26s.user.UserApiService
 import dagger.Module
 import dagger.Provides
@@ -71,5 +73,17 @@ object BackendNetworkModule {
     @Singleton
     fun provideChallengeApi(retrofit: Retrofit): ChallengeApi {
         return retrofit.create(ChallengeApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStepsApi(retrofit: Retrofit): StepsApi {
+        return retrofit.create(StepsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAchievementApi(retrofit: Retrofit): AchievementApi {
+        return retrofit.create(AchievementApi::class.java)
     }
 }

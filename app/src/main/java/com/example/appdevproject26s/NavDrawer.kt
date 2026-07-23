@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -109,6 +110,23 @@ fun NavDrawer(
                     onClick = {
                         drawerStateScope.launch { drawerState.close() }
                         navController.navigate("challenge") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.achievements_title)) },
+                    selected = currentRoute == "achievements",
+                    icon = {
+                        Icon(
+                            Icons.Default.MilitaryTech,
+                            contentDescription = stringResource(R.string.achievements_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("achievements") {
                             popUpTo("home") { saveState = true }
                             launchSingleTop = true
                         }
