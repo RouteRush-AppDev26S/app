@@ -1,5 +1,6 @@
 package com.example.appdevproject26s.modules
 
+import com.example.appdevproject26s.gamification.achievements.AchievementApi
 import com.example.appdevproject26s.gamification.challenges.ChallengeApi
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
@@ -78,5 +79,11 @@ object BackendNetworkModule {
     @Singleton
     fun provideStepsApi(retrofit: Retrofit): StepsApi {
         return retrofit.create(StepsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAchievementApi(retrofit: Retrofit): AchievementApi {
+        return retrofit.create(AchievementApi::class.java)
     }
 }
