@@ -115,19 +115,21 @@ fun MessageBubble(message: ChatMessageResponse, isMe: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = if (isMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-            ),
-            modifier = Modifier.fillMaxWidth(fraction = 0.8f)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
+        BoxWithConstraints {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                ),
+                modifier = Modifier.widthIn(max = maxWidth * 0.8f)
             ) {
-                Text(
-                    text = message.content ?: "",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    Text(
+                        text = message.content ?: "",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
