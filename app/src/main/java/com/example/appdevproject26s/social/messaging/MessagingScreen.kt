@@ -128,7 +128,7 @@ fun MessagingScreen(
                             onDismiss = { showNewChatDialog = false },
                             onChatSelected = { chat ->
                                 showNewChatDialog = false
-                                // TODO: Navigate to chat details thread screen using chat.id
+                                messagingViewModel.selectChat(chat)
                             }
                         )
                     }
