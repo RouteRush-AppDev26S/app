@@ -34,6 +34,7 @@ import java.util.Locale
 import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.steps.StepsRepository
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 const val PIXELS_PER_TILE = 256
@@ -50,11 +51,13 @@ class HomeScreenViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val stepsRepository: StepsRepository
 ) : ViewModel() {
-    val isLoggedIn = authRepository.isLoggedInFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
+
+    val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     val stepsReadPermission = stepsRepository.readStepsPermission
 
