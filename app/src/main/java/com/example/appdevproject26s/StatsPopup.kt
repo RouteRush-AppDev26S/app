@@ -1,6 +1,5 @@
 package com.example.appdevproject26s
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -8,9 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.appdevproject26s.route.HomeScreenViewModel
+import com.example.appdevproject26s.route.MatheFile
 import java.util.Locale
-import com.example.appdevproject26s.tracking.MatheFile
-import com.example.appdevproject26s.tracking.Timer
 import com.google.android.gms.location.LocationResult
 
 
@@ -19,10 +18,8 @@ fun StatsPopup(
     viewModel: HomeScreenViewModel,
     modifier: Modifier = Modifier
 ) {
-    val matheFile = remember { MatheFile() }
-    val trackPoints = viewModel.trackPoints
     val speedLimit = viewModel.speedLimit
-    val currentAddress: String? = viewModel.currentAddress
+    val currentAddress = viewModel.currentAddress
 
     val totalSteps = viewModel.schritte
     val durationSeconds: Double = viewModel.durationSeconds
@@ -41,7 +38,7 @@ fun StatsPopup(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = currentAddress ?: "Unbekannter Ort",
+                text = currentAddress.ifBlank { "Unbekannter Ort" },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
@@ -53,7 +50,7 @@ fun StatsPopup(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(label = "Geschwindigkeit", value = String.format(Locale.getDefault(), "%.2f km/h", viewModel.speed) ?: "0.0")
+                StatItem(label = "Geschwindigkeit", value = String.format(Locale.getDefault(), "%.2f km/h", viewModel.speed))
                 StatItem(label = "Limit", value = speedLimit?.let { "$it km/h" } ?: "N/A")
             }
 
@@ -62,8 +59,7 @@ fun StatsPopup(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(label = "Ø Geschwindigkeit", value = String.format(Locale.getDefault(), "%.2f km/h", averageSpeedKmH))
-                // Zur Sicherheit .toInt() anhängen, damit %d nicht bei Float/Double abstürzt
-                StatItem(label = "Schritte/Min", value = String.format(Locale.getDefault(), "%d", viewModel.stepsPerMinute.toInt()))
+                StatItem(label = "Schritte/Min", value = String.format(Locale.getDefault(), "%d", viewModel.stepsPerMinute))
             }
 
             Row(

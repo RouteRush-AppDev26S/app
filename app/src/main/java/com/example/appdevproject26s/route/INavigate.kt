@@ -1,7 +1,12 @@
 package com.example.appdevproject26s.route
 
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.maplibre.spatialk.geojson.Position
+
+
 
 interface INavigate
 {
@@ -25,7 +30,10 @@ interface INavigate
      * Enthält die Route als List<Position>
      */
     val routePoints: List<Position>
-
+    /*
+    * enthält die tracking Daten
+     */
+    var trackPoints: List<OrsTrackPoint>
     /**
      * Enthält die Streckenlänge in KM
      * kann durch aufruf calcRemainingTimeFromServer(now: Location ) ersetzt werden
@@ -37,13 +45,13 @@ interface INavigate
      * kann durch aufruf calcRemainingTimeFromServer(now: Location ) ersetzt werden
      * beobachtbar
      */
-    val durationSeconds: Long
+    val durationSeconds: Double
 
     /**
      * Aktuelles SpeedLimit (beobachtbar)
      */
     val speedLimit: Int?
-    val currentAddress: String
+    val currentAddress: String?
     val currentPosition: Location?
     var noMaut: Boolean
 
@@ -65,4 +73,10 @@ interface INavigate
     val errorMessage: String?
     fun isononePoint(von: Location, nach: Location): Double
     fun routeNachAdresse(adresseStart: String, adresseStop: String)
+    /*
+    Tracking
+     */
+    var trackingstart : Boolean
+    var distance: Double
+
 }

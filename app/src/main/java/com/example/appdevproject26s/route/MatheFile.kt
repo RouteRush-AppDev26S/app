@@ -1,6 +1,5 @@
-package com.example.appdevproject26s.tracking
+package com.example.appdevproject26s.route
 
-import com.example.appdevproject26s.navigate.Location
 import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +13,7 @@ import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.*
 
 data class Coordinate(val lon: Double, val lat: Double) {
     fun toJsonArray() = listOf(lon, lat)
@@ -29,11 +29,21 @@ data class OrsTrackPoint(
 )
 
 @Singleton
-class MatheFile @Inject constructor() {
+class MatheFile @Inject constructor(
+    private var time: Timer
+) {
 
     var distanceSum: Double by mutableStateOf(0.0)
+
     fun haversineDistance(l1: Location, l2: Location): Double {
-        return l1.distanceTo(l2).toDouble()
+        val r = 6371000.0 // m
+        val dLat = Math.toRadians(l2.lat - l1.lat)
+        val dLon = Math.toRadians(l2.lon - l1.lon)
+        val a = sin(dLat / 2).pow(2) +
+                cos(Math.toRadians(l1.lat)) * cos(Math.toRadians(l2.lat)) *
+                sin(dLon / 2).pow(2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return r * c
     }
 
     fun calculateKmhWithLocation(distanceMeters: Double, l1: Location, l2: Location): Double {
@@ -68,7 +78,7 @@ class MatheFile @Inject constructor() {
             kmh = kmh,
             steps = schritte
         )
-        distanceSum+=distance;
+        distanceSum += distance
         return trackPoints + newPoint
     }
 
@@ -136,7 +146,7 @@ class MatheFile @Inject constructor() {
                 val lat = locJson.getLong("latitudeE7") / 10000000.0
                 val lon = locJson.getLong("longitudeE7") / 10000000.0
                 val timestampStr = locJson.optString("timestamp", defaultSdf.format(Date()))
-                val steps = locJson.optInt("steps", 0)
+                // steps is handled differently now if we use custom Location
 
                 val timeMs = try {
                     defaultSdf.parse(timestampStr)?.time ?: System.currentTimeMillis()
@@ -151,23 +161,14 @@ class MatheFile @Inject constructor() {
                     }
                 }
 
-                val currentLoc = Location(lat = lat, lon = lon).apply {
-                    time = timeMs
-                    extras = Bundle().apply { putInt("steps", steps) }
-                }
-
+                val currentLoc = Location(lat = lat, lon = lon, time = timeMs)
+                
                 if (lastSavedLocation == null) {
-                    currentLoc.speed = 0.0f
                     processedLocations.add(currentLoc)
                     lastSavedLocation = currentLoc
                 } else {
-                    val distance = lastSavedLocation.distanceTo(currentLoc)
+                    val distance = haversineDistance(lastSavedLocation, currentLoc)
                     if (distance >= minDistanceMeters) {
-                        val timeDeltaSec = (currentLoc.time - lastSavedLocation.time) / 1000.0
-                        if (timeDeltaSec > 0) {
-                            val speedKmh = (distance / timeDeltaSec) * 3.6
-                            currentLoc.speed = speedKmh.toFloat()
-                        }
                         processedLocations.add(currentLoc)
                         lastSavedLocation = currentLoc
                     }
@@ -182,5 +183,4 @@ class MatheFile @Inject constructor() {
             println("Punkt $index | Zeit: ${point.timestamp} | +${point.distanceToPrevious}m | Tempo: ${point.kmh} km/h | Schritte: ${point.steps}")
         }
     }
-
 }

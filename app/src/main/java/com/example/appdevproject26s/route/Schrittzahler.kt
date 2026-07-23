@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.tracking
+package com.example.appdevproject26s.route
 
 import android.content.Context
 import android.hardware.Sensor
@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+
+import android.util.Log
 
 @Singleton
 class Schrittzahler @Inject constructor(
@@ -25,12 +27,15 @@ class Schrittzahler @Inject constructor(
     private var initialSteps: Int = -1
 
     fun start() {
+        Log.d("Schrittzahler", "Starting sensor... Sensor available: ${stepCounterSensor != null}")
         stepCounterSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+            val registered = sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+            Log.d("Schrittzahler", "Sensor registered: $registered")
         }
     }
 
     fun stop() {
+        Log.d("Schrittzahler", "Stopping sensor")
         sensorManager.unregisterListener(this)
         initialSteps = -1
     }
@@ -38,12 +43,15 @@ class Schrittzahler @Inject constructor(
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
             val totalSteps = event.values[0].toInt()
+            Log.d("Schrittzahler", "Sensor changed: totalSteps=$totalSteps")
             
             if (initialSteps == -1) {
                 initialSteps = totalSteps
+                Log.d("Schrittzahler", "Initial steps set to $initialSteps")
             }
             
             schritte = totalSteps - initialSteps
+            Log.d("Schrittzahler", "Calculated steps: $schritte")
         }
     }
 

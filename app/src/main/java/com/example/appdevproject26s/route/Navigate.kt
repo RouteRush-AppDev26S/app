@@ -3,7 +3,7 @@
 *           Implementation of the Navigate Interface
  */
 package com.example.appdevproject26s.route
-
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.location.Geocoder
 import android.os.Build
@@ -13,10 +13,13 @@ import android.os.VibratorManager
 import com.google.gson.Gson
 import org.maplibre.spatialk.geojson.Position
 
+
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,26 +37,32 @@ import kotlin.collections.forEach
 import kotlin.text.split
 
 @Singleton
-class Navigate @Inject constructor(
+class Navigate @Inject constructor (
     @ApplicationContext private val context: Context,
     private val db: RouteDao,
     private val vibrator: Vibrator,
     private val zeitberechnung: Zeitberechnung,
-    private val api: OrsApi
+    private val api: OrsApi,
+    private val tracking: MatheFile,
+    private val zahler: Schrittzahler,
+    private val time: Timer
 ) : INavigate {
     private var dist: Double = 0.0
 
-    companion object {
+    /*companion object {
         private const val TAG = "Navigate"
-    }
-
+    }*/
+    override var trackingstart by mutableStateOf(false)
     var oldadresse: String = ""
     override var noMaut: Boolean = false
+
     override var noHighway: Boolean = false
+    var old: Location? = null
 
     override var routeaktiv: Boolean = false
     override var currentTrip: Trip? by mutableStateOf(null)
         private set
+    override var distance: Double by mutableStateOf(0.0)
     private var ziel: Location = Location(0.0,0.0)
 
     private var geraet: String = ""
@@ -61,11 +70,11 @@ class Navigate @Inject constructor(
     override var manoevertext: ArrayList<InstructionsNavigate> by mutableStateOf(ArrayList<InstructionsNavigate>())
     override var routePoints: List<Position> by mutableStateOf(emptyList())
         private set
-
+    override var trackPoints: List<OrsTrackPoint> by  mutableStateOf(emptyList())
     override var totalLengthKM: Double by mutableStateOf(0.0)
         private set
 
-    override var durationSeconds: Long by mutableStateOf(0L)
+    override var durationSeconds: Double by mutableDoubleStateOf(0.0)
         private set
 
     override var speedLimit: Int? by mutableStateOf(null)
@@ -115,7 +124,7 @@ class Navigate @Inject constructor(
         routePoints = emptyList()
         manoevertext = ArrayList()
         totalLengthKM = 0.0
-        durationSeconds = 0L
+        durationSeconds = 0.0
         speedLimit = null
         startAddress = ""
         destinationAddress = ""
@@ -207,7 +216,7 @@ class Navigate @Inject constructor(
                     )
                 }
                 totalLengthKM = currentTrip?.summary?.distance ?: 0.0
-                durationSeconds = currentTrip?.summary?.duration?.toLong() ?: 0L
+                durationSeconds = currentTrip?.summary?.duration?.toDouble() ?: 0.0
 
                 val newPoints = route.toLatLngList().map { Position(it.longitude, it.latitude) }
                 routePoints = routePoints + if (routePoints.isNotEmpty()) newPoints.drop(1) else newPoints
@@ -273,7 +282,7 @@ class Navigate @Inject constructor(
             val trip = RouteConverter.jsonToTrip(last.tripJson) ?: return null
             currentTrip = trip
             totalLengthKM = trip.summary.distance
-            durationSeconds = trip.summary.duration.toLong()
+            durationSeconds = trip.summary.duration.toDouble()
             routePoints = RouteConverter.jsonToPoints(last.routePointsJson) ?: emptyList()
             trip
         } catch (e: Exception) {
@@ -284,8 +293,29 @@ class Navigate @Inject constructor(
 
     override fun updatePosition(now: Location) {
         scope.launch {
-            getSpeedLimit(now)
-            //updateAdresse(now)
+            val lastPos = old
+            distance += if (lastPos != null) tracking.haversineDistance(lastPos, now)/1000 else 0.0
+
+            if (lastPos == null || tracking.haversineDistance(lastPos, now) > 100) {
+                getSpeedLimit(now)
+                val addr = updateAdresse(now)
+                withContext(Dispatchers.Main) {
+                    currentAddress = addr
+                    currentPosition = now
+                }
+
+                if (trackingstart) {
+                    val currentKmh = if (lastPos != null) tracking.calculateKmhWithLocation(distance, lastPos, now) else 0.0
+                    trackPoints = tracking.addTrakkingData(
+                        trackPoints = trackPoints,
+                        start = lastPos ?: now,
+                        stop = now,
+                        schritte = zahler.schritte,
+                        kmh = currentKmh
+                    )
+                }
+            }
+
             if (routeaktiv) {
                 if (zeitberechnung.isOffRoute(now, routePoints, 50.0)) {
                     calcRoute(now, ziel, geraet)
@@ -295,6 +325,7 @@ class Navigate @Inject constructor(
                     showChangeDirection()
                 }
             }
+            old = now
         }
     }
 
@@ -401,7 +432,7 @@ class Navigate @Inject constructor(
 
         val body = response.body()
         val dist_matrix = body?.distances?.get(0)?.get(1) ?: 0.0 // Von 0 zu 1
-        val dur_matrix = body?.durations?.get(0)?.get(1)?.toLong()
+        val dur_matrix = body?.durations?.get(0)?.get(1)?.toDouble()
 
         if (dist_matrix != null && dur_matrix != null) {
             totalLengthKM = dist_matrix
@@ -447,7 +478,7 @@ class Navigate @Inject constructor(
         currentTrip = null
         routePoints = emptyList()
         totalLengthKM = 0.0
-        durationSeconds = 0
+        durationSeconds = 0.0
         speedLimit = null
         startAddress = ""
         destinationAddress = ""
@@ -484,26 +515,20 @@ class Navigate @Inject constructor(
                     var strassepoint=startKombinationsIndex+(endKombinationsIndex-startKombinationsIndex)/2
                     // Jetzt holen wir uns die echte Location aus der Gesamtliste
                     //val manoeverLocation: Position? = if (startKombinationsIndex = step.way_points?.lastOrNull() != null && startKombinationsIndex < routePoints.size) {
-                    val manoeverLocation=routePoints[step.way_points.first()]
-                    //} else {
-                        null
-                   // }
+                    val manoeverLocation = routePoints[step.way_points.first()]
                     if (anweisung == "unbekannt") anweisung = "wechsel auf"
                     val schritt = InstructionsNavigate(
                         manoever = "In ${step.distance} km $anweisung",
                         distance = step.distance,
                         todrivekm = remainingDist,
-                        adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
-                            manoeverLocation?.longitude ?: 0.0))
-                        )
-                        var newadresse=schritt.adresse.split(",").first()
+                        adresse = getAdresseOnce(Location(manoeverLocation.latitude, manoeverLocation.longitude))
+                    )
+                    var newadresse = schritt.adresse.split(",").first()
                         .split(Regex("(?=\\d)"), limit = 2).first()
-                        if((schritt.adresse.isEmpty() || newadresse.equals(oldadresse)) && (step.way_points.last()+1)< routePoints.size)
-                        {
-                            val manoeverLocation=routePoints[step.way_points.last()+1]
-                            schritt.adresse = getAdresseOnce( Location(manoeverLocation?.latitude ?: 0.0,
-                                manoeverLocation?.longitude ?: 0.0))
-                        }
+                    if ((schritt.adresse.isEmpty() || newadresse == oldadresse) && (step.way_points.last() + 1) < routePoints.size) {
+                        val nextManoeverLocation = routePoints[step.way_points.last() + 1]
+                        schritt.adresse = getAdresseOnce(Location(nextManoeverLocation.latitude, nextManoeverLocation.longitude))
+                    }
                     oldadresse=newadresse;
                     newList.add(schritt)
                     remainingDist -= step.distance
@@ -627,7 +652,7 @@ class Navigate @Inject constructor(
         }
     }
 
-    suspend fun updateAdresse(now: Location) {
+    suspend fun updateAdresse(now: Location): String {
 
         // BERECHNUNG: Hat sich die Position deutlich verändert?
         /*val sollteAdresseLaden = lastAddressLocation == null ||
@@ -657,14 +682,16 @@ class Navigate @Inject constructor(
                     // Schicke die Adresse an dein UI (z.B. über ein StateFlow oder LiveData)
                     println(vollständigeAdresse)
                     lastAddressLocation = now
+                    return vollständigeAdresse
                 }
             } catch (e: Exception) {
                 // Fange Netzwerkfehler (z.B. kein Internet) ab, damit die App nicht abstürzt
                 Log.e("Navi", "Fehler beim Laden der Adresse: ${e.message}")
             }
-       // }
-    }
-    override fun isononePoint(von: Location,nach: Location):Double {
+            return ""
+        }
+
+    override fun isononePoint(von: Location, nach: Location): Double {
         return zeitberechnung.haversine(Position(von.lon, von.lat),Position(nach.lon, nach.lat))
     }
 

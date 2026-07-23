@@ -103,11 +103,22 @@ fun MapLayer(
                 ),
         ) {
             val routePoints = homeViewModel.routePoints
-            
+            val trackPoints = homeViewModel.trackPoints
+
             // Verhindert Absturz, wenn noch keine Route vorhanden ist
             val routeSource = rememberGeoJsonSource(
                 data = if (routePoints.size >= 2) {
                     GeoJsonData.Features(LineString(routePoints))
+                } else {
+                    GeoJsonData.Features(MultiPoint(emptyList()))
+                }
+            )
+
+            // Tracking-Pfad (Traceroute)
+            val trackPathPoints = trackPoints.map { org.maplibre.spatialk.geojson.Position(it.lon, it.lat) }
+            val trackSource = rememberGeoJsonSource(
+                data = if (trackPathPoints.size >= 2) {
+                    GeoJsonData.Features(LineString(trackPathPoints))
                 } else {
                     GeoJsonData.Features(MultiPoint(emptyList()))
                 }
@@ -159,6 +170,24 @@ fun MapLayer(
                     source = pointsSource,
                     color = const(Color.Red),
                     radius = const(6.dp)
+                )
+            }
+
+            // Tracking Layer zeichnen
+            if (trackPathPoints.size >= 2) {
+                LineLayer(
+                    id = "track-layer",
+                    source = trackSource,
+                    color = const(Color(0xFF4CAF50)), // Grün für Tracking
+                    width = const(4.dp)
+                )
+            }
+            if (trackPathPoints.isNotEmpty()) {
+                CircleLayer(
+                    id = "track-points",
+                    source = trackSource,
+                    color = const(Color(0xFF2E7D32)), // Dunkleres Grün für Punkte
+                    radius = const(3.dp)
                 )
             }
         }

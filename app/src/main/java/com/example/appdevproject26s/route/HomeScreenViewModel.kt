@@ -1,9 +1,15 @@
 package com.example.appdevproject26s.route
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Looper
-import android.util.Log
-import androidx.compose.runtime.collectAsState
+import androidx.annotation.RequiresPermission
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
@@ -24,27 +30,50 @@ import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
+import java.util.Locale
 import javax.inject.Inject
-
 const val PIXELS_PER_TILE = 256
 
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val repository: MapSettingsRepository,
     private val navigate: Navigate,
-    private val locationClient: FusedLocationProviderClient
+    private val locationClient: FusedLocationProviderClient,
+    private val zahler: Schrittzahler,
+    private val speedkmh : Speed,
+    private val mathe : MatheFile,
+    private val timertr: Timer
 ) : ViewModel() {
     private val defaultPos = CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0)
     private val _fullscreen = MutableStateFlow<Boolean>(false)
     val fullscreen = _fullscreen.asStateFlow()
     var cameraState = CameraState(firstPosition = defaultPos)
 
+    // 🟢 KORREKT: Compose State für Double
+    var durationSeconds by mutableDoubleStateOf(0.0)
+        private set // UI darf nur lesen, ViewModel schreibt
 
+    // 🟢 KORREKT: Compose State für Float
+    var averageSpeedKmH by mutableFloatStateOf(0.0f)
+        private set
+    var timerThread: Thread? = null
+
+    fun formatDuration(totalSeconds: Double): String {
+        // Nutzt explizite Methoden statt der Symbole / und %
+        val hours = totalSeconds.div(3600).toInt()
+        val minutes = totalSeconds.rem(3600).div(60).toInt()
+        val seconds = totalSeconds.rem(60).toInt()
+
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+    }
 
     val routePoints get() = navigate.routePoints
+    val trackPoints get() = navigate.trackPoints
+    val currentPosition get() = navigate.currentPosition
+    val currentAddress get() = navigate.currentAddress
     val currentTrip get() = navigate.currentTrip
     val totalLengthKM get() = navigate.totalLengthKM
-    val durationSeconds get() = navigate.durationSeconds
+    val routeDurationSeconds get() = navigate.durationSeconds
     val speedLimit get() = navigate.speedLimit
     val manoevertext get() = navigate.manoevertext
     val startAddress get() = navigate.startAddress
@@ -52,6 +81,10 @@ class HomeScreenViewModel @Inject constructor(
     val isCalculating get() = navigate.isCalculating
     val errorMessage get() = navigate.errorMessage
 
+    var stepsPerMinute by mutableStateOf(0)
+    val schritte get() = zahler.schritte
+    val speed get() = speedkmh.speedKmH ?: 0f
+    val distance get() = navigate.distance
     private val _isPlanningMode = MutableStateFlow(false)
     val isPlanningMode = _isPlanningMode.asStateFlow()
 
@@ -75,7 +108,7 @@ class HomeScreenViewModel @Inject constructor(
 
     private var originalStartLoc: Location? = null
     private var originalDestLocs = mutableListOf<Location?>()
-
+    val trackingstart get() = navigate.trackingstart
     val vehicleOptions = listOf(
         "Auto" to "driving-car",
         "Fahrrad" to "cycling-regular",
@@ -84,12 +117,42 @@ class HomeScreenViewModel @Inject constructor(
 
     private fun updatePlanningPoints() {
         val points = mutableListOf<Position>()
-        originalStartLoc?.let { points.add(Position(it.lon, it.lat)) }
+        originalStartLoc?.let { points.add(Position(it.longitude, it.latitude)) }
         originalDestLocs.forEach { loc ->
-            loc?.let { points.add(Position(it.lon, it.lat)) }
+            loc?.let { points.add(Position(it.longitude, it.latitude)) }
         }
         _planningPoints.value = points
     }
+
+
+    //@RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    fun toggletracking(){
+        navigate.trackingstart = !navigate.trackingstart
+        if(navigate.trackingstart){
+            zahler.start()
+            @SuppressLint("MissingPermission")
+            speedkmh.startSpeedTracking {
+                calculateAverageSpeed()
+                calculateStepsPerMinute()
+            }
+            timertr.start(onTick = {
+                durationSeconds = it.toDouble()
+                calculateAverageSpeed()
+                calculateStepsPerMinute()
+            })
+            originalStartLoc?.let { navigate.updatePosition(it) }
+        } else {
+            timertr.stop()
+            speedkmh.stopSpeedTracking()
+            durationSeconds=0.0
+            navigate.distance = 0.0
+            averageSpeedKmH = 0.0f
+            stepsPerMinute = 0
+            zahler.stop()
+        }
+
+    }
+
 
     fun togglePlanningMode() {
         _isPlanningMode.value = !_isPlanningMode.value
@@ -216,7 +279,7 @@ class HomeScreenViewModel @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             result.lastLocation?.let { loc ->
                 _userLocation.value = Position(loc.longitude, loc.latitude)
-                navigate.updatePosition(Location(loc.latitude, loc.longitude))
+                navigate.updatePosition(Location(lat = loc.latitude, lon = loc.longitude, time = loc.time))
             }
         }
     }
@@ -235,7 +298,9 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
+
     @SuppressLint("MissingPermission")
+    @RequiresPermission(allOf = [android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2_000L)
             .setMinUpdateDistanceMeters(1f)
@@ -250,6 +315,8 @@ class HomeScreenViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         stopLocationUpdates()
+        zahler.stop()
+        speedkmh.stopSpeedTracking()
     }
 
     fun onMapTap(point: Position, screePoint: DpOffset) {
@@ -292,6 +359,25 @@ class HomeScreenViewModel @Inject constructor(
         } else {
             val startLocation = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
             openPlanningWithLocations(startLocation, tappedLoc)
+        }
+    }
+    private fun calculateAverageSpeed() {
+        if (durationSeconds > 0) {
+            // distance ist in km, durationSeconds in s
+            // km / (s / 3600) = (km / s) * 3600
+            averageSpeedKmH = ((distance / durationSeconds) * 3600.0).toFloat()
+        } else {
+            averageSpeedKmH = 0.0f
+        }
+    }
+    private fun calculateStepsPerMinute() {
+        if (durationSeconds > 0 && schritte > 0) {
+            // Schritte geteilt durch Sekunden ergibt Schritte pro Sekunde.
+            // Mal 60 ergibt Schritte pro Minute.
+            val spm = (schritte.toDouble() / durationSeconds) * 60.0
+            stepsPerMinute = spm.toInt()
+        } else {
+            stepsPerMinute = 0
         }
     }
 }

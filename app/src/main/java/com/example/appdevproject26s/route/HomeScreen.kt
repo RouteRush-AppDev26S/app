@@ -1,6 +1,7 @@
 package com.example.appdevproject26s.route
 
 import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.appdevproject26s.R
 import com.example.appdevproject26s.ScreenScaffold
+import com.example.appdevproject26s.StatsPopup
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -29,20 +31,23 @@ fun HomeScreen(navController: NavController) {
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        ) {
+        val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        
+        if (locationGranted) {
             viewModel.startLocationUpdates()
         }
     }
 
     LaunchedEffect(Unit) {
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(Manifest.permission.ACTIVITY_RECOGNITION)
+        }
+        permissionLauncher.launch(permissions.toTypedArray())
     }
 
     ScreenScaffold(
@@ -73,7 +78,7 @@ fun HomeScreen(navController: NavController) {
                 }
             } else {
                 FloatingActionButton(
-                    onClick = { viewModel.togglePlanningMode() },
+                    onClick = { viewModel.toggletracking() },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp)
@@ -88,7 +93,14 @@ fun HomeScreen(navController: NavController) {
                     onDismiss = { viewModel.togglePlanningMode() }
                 )
             }
+            if(viewModel.trackingstart){
+                StatsPopup(
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                )
+            }
         }
     }
 }
-

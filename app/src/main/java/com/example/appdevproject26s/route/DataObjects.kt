@@ -164,7 +164,14 @@ fun decodePolyline(encoded: String, precision: Int = 5): List<LatLng> {
 
 // ---- Standort ----
 
-data class Location(var lat: Double, var lon: Double)
+data class Location(
+    var lat: Double,
+    var lon: Double,
+    var time: Long = System.currentTimeMillis()
+) {
+    val latitude get() = lat
+    val longitude get() = lon
+}
 
 // ---- Trip (berechnete Route) ----
 
