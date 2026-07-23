@@ -52,10 +52,16 @@ fun MessagingScreen(
             null
         }
 
+    val screenTitle =
+        if (selectedChat != null) {
+            selectedChat?.name ?: "Chat #${selectedChat?.id}"
+        } else {
+            stringResource(R.string.messages_title)
+        }
 
     ScreenScaffold(
         navController = navController,
-        title = selectedChat?.name ?: stringResource(R.string.messages_title),
+        title = screenTitle,
         showBackButton = true,
         onBackClick = onBackClick
     ) { paddingValues ->
