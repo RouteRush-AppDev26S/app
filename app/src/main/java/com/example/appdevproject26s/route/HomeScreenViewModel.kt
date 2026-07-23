@@ -7,7 +7,7 @@ import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -31,6 +31,10 @@ import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 import java.util.Locale
+import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.steps.StepsRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 const val PIXELS_PER_TILE = 256
 
@@ -42,8 +46,32 @@ class HomeScreenViewModel @Inject constructor(
     private val zahler: Schrittzahler,
     private val speedkmh : Speed,
     private val mathe : MatheFile,
-    private val timertr: Timer
+    private val timertr: Timer,
+    private val authRepository: AuthRepository,
+    private val stepsRepository: StepsRepository
 ) : ViewModel() {
+    val isLoggedIn = authRepository.isLoggedInFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val stepsReadPermission = stepsRepository.readStepsPermission
+
+    fun isHealthConnectAvailable() = stepsRepository.isHealthConnectAvailable()
+
+    suspend fun hasStepsPermission() = stepsRepository.hasStepsPermission()
+
+    fun syncSteps() {
+        viewModelScope.launch {
+            try {
+                stepsRepository.syncTodaySteps()
+            } catch (_: Exception) {
+                // Fehler ignoriert
+            }
+        }
+    }
+
     private val defaultPos = CameraPosition(target = Position(14.2659460, 46.6163897), zoom = 12.0)
     private val _fullscreen = MutableStateFlow<Boolean>(false)
     val fullscreen = _fullscreen.asStateFlow()
@@ -81,7 +109,7 @@ class HomeScreenViewModel @Inject constructor(
     val isCalculating get() = navigate.isCalculating
     val errorMessage get() = navigate.errorMessage
 
-    var stepsPerMinute by mutableStateOf(0)
+    var stepsPerMinute by mutableIntStateOf(0)
     val schritte get() = zahler.schritte
     val speed get() = speedkmh.speedKmH ?: 0f
     val distance get() = navigate.distance
@@ -125,21 +153,20 @@ class HomeScreenViewModel @Inject constructor(
     }
 
 
-    //@RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    @SuppressLint("MissingPermission")
     fun toggletracking(){
         navigate.trackingstart = !navigate.trackingstart
         if(navigate.trackingstart){
             zahler.start()
-            @SuppressLint("MissingPermission")
             speedkmh.startSpeedTracking {
                 calculateAverageSpeed()
                 calculateStepsPerMinute()
             }
-            timertr.start(onTick = {
-                durationSeconds = it.toDouble()
+            timertr.start { tick ->
+                durationSeconds = tick.toDouble()
                 calculateAverageSpeed()
                 calculateStepsPerMinute()
-            })
+            }
             originalStartLoc?.let { navigate.updatePosition(it) }
         } else {
             timertr.stop()
