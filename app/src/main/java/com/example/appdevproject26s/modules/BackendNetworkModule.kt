@@ -6,6 +6,7 @@ import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
 import com.example.appdevproject26s.social.friends.FriendApiService
+import com.example.appdevproject26s.social.messaging.ChatApiService
 import com.example.appdevproject26s.steps.StepsApi
 import com.example.appdevproject26s.user.UserApiService
 import dagger.Module
@@ -62,6 +63,11 @@ object BackendNetworkModule {
         return retrofit.create(FriendApiService::class.java)
     }
 
+    @Provides
+    @Singleton
+    fun provideChatApiService(retrofit: Retrofit): ChatApiService {
+        return retrofit.create(ChatApiService::class.java)
+    }
 
     @Provides
     @Singleton

@@ -31,6 +31,7 @@ fun ScreenScaffold(
     title: String,
     showTopBar: Boolean = true,
     showBackButton: Boolean = true,
+    onBackClick: (() -> Unit)? = null,
     useInnerPadding: Boolean = true,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     content: @Composable (openDrawer: () -> Unit ) -> Unit
@@ -49,7 +50,13 @@ fun ScreenScaffold(
                     title = { Text(title) },
                     navigationIcon = {
                         if (showBackButton) {
-                            IconButton(onClick = { navController.popBackStack() }) {
+                            IconButton(onClick = {
+                                if (onBackClick != null) {
+                                    onBackClick()
+                                } else {
+                                    navController.popBackStack()
+                                }
+                            }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back"
