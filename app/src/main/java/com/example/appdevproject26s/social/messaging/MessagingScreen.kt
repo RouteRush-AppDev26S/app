@@ -68,22 +68,6 @@ fun MessagingScreen(
 
         } else {
 
-            val handleBackNavigation = {
-                if (selectedChat != null) {
-                    messagingViewModel.selectChat(null) // Unselect chat first
-                } else {
-                    navController.popBackStack() // Then navigate back out of the screen
-                }
-            }
-
-            androidx.activity.compose.BackHandler {
-                handleBackNavigation()
-            }
-
-//            androidx.activity.compose.BackHandler(enabled = selectedChat != null) {
-//                messagingViewModel.selectChat(null)
-//            }
-
             if (selectedChat != null) {
                 val currentChat = selectedChat!!
                 val chatId = currentChat.id ?: 0L
@@ -94,7 +78,6 @@ fun MessagingScreen(
                     messages = messages,
                     onSendMessage = messagingViewModel::sendMessage,
                     myUsername = currentUser?.username ?: "",
-//                    modifier = Modifier.padding(paddingValues)
                 )
             } else {
 
@@ -151,7 +134,7 @@ fun MessagingScreen(
 
 @Composable
 fun ChatCard(
-    chat: Chat,
+    chat: ChatResponse,
     onClick: () -> Unit
 ) {
     Card(
@@ -172,7 +155,7 @@ fun ChatCard(
 fun NewChatDialog(
     viewModel: MessagingScreenViewModel,
     onDismiss: () -> Unit,
-    onChatSelected: (Chat) -> Unit
+    onChatSelected: (ChatResponse) -> Unit
 ) {
     val friends by viewModel.friends.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -180,7 +163,7 @@ fun NewChatDialog(
     // Filter friends based on search query matching their username
     val filteredFriends = friends.filter { friendship ->
         val otherUsername = friendship.otherUsername
-        otherUsername?.contains(searchQuery, ignoreCase = true) == true
+        otherUsername.contains(searchQuery, ignoreCase = true)
     }
 
     AlertDialog(

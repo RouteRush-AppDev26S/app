@@ -43,11 +43,11 @@ class MessagingScreenViewModel @Inject constructor(
     private val _currentUser = MutableStateFlow<UserProfileResponse?>(null)
     val currentUser: StateFlow<UserProfileResponse?> = _currentUser.asStateFlow()
 
-    private val _chats = MutableStateFlow<List<Chat>>(emptyList())
-    val chats: StateFlow<List<Chat>> = _chats.asStateFlow()
+    private val _chats = MutableStateFlow<List<ChatResponse>>(emptyList())
+    val chats: StateFlow<List<ChatResponse>> = _chats.asStateFlow()
 
-    private val _selectedChat = MutableStateFlow<Chat?>(null)
-    val selectedChat: StateFlow<Chat?> = _selectedChat.asStateFlow()
+    private val _selectedChat = MutableStateFlow<ChatResponse?>(null)
+    val selectedChat: StateFlow<ChatResponse?> = _selectedChat.asStateFlow()
 
     private val _friends = MutableStateFlow<List<FriendshipResponse>>(emptyList())
     val friends: StateFlow<List<FriendshipResponse>> = _friends.asStateFlow()
@@ -56,27 +56,34 @@ class MessagingScreenViewModel @Inject constructor(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val messages: StateFlow<List<ChatMessage>> =
-        merge(
-            _selectedChat,
-            _messageRefreshTrigger.map { _selectedChat.value } // Whenever triggered, emit the current chat
-        ).flatMapLatest { chat ->
-            flow {
-                if (chat?.id != null) {
-                    messagingRepository.getMessages(chat.id).fold(
-                        onSuccess = { emit(it) },
-                        onFailure = { emit(emptyList()) }
-                    )
-                } else {
-                    emit(emptyList())
+    val messages: StateFlow<List<ChatMessageResponse>> =
+        _selectedChat
+            .flatMapLatest { chat ->
+                flow {
+                    if (chat?.id != null) {
+                        // Emit initial load
+                        fetchMessages(chat.id)
+
+                        _messageRefreshTrigger.collect {
+                            fetchMessages(chat.id)
+                        }
+                    } else {
+                        emit(emptyList())
+                    }
                 }
             }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    private suspend fun kotlinx.coroutines.flow.FlowCollector<List<ChatMessageResponse>>.fetchMessages(chatId: Long) {
+        messagingRepository.getMessages(chatId).fold(
+            onSuccess = { emit(it) },
+            onFailure = { emit(emptyList()) }
         )
+    }
 
     init {
         viewModelScope.launch {
@@ -116,7 +123,7 @@ class MessagingScreenViewModel @Inject constructor(
         }
     }
 
-    fun selectChat(chat: Chat?) {
+    fun selectChat(chat: ChatResponse?) {
         _selectedChat.value = chat
     }
 
@@ -133,7 +140,7 @@ class MessagingScreenViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
-    fun createDirectChat(username: String, onChatCreated: (Chat) -> Unit) {
+    fun createDirectChat(username: String, onChatCreated: (ChatResponse) -> Unit) {
         viewModelScope.launch {
             messagingRepository.createDirectChat(username).fold(
                 onSuccess = { chat ->

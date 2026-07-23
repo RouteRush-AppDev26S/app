@@ -7,20 +7,20 @@ import retrofit2.http.Path
 
 interface ChatApiService {
     @GET("chats")
-    suspend fun getMyChats(): List<Chat>
+    suspend fun getMyChats(): List<ChatResponse>
 
     @POST("chats/direct")
-    suspend fun createDirectChat(@Body request: CreateDirectChatRequest): Chat
+    suspend fun createDirectChat(@Body request: CreateDirectChatRequest): ChatResponse
 
     @POST("chats/group")
-    suspend fun createGroupChat(@Body request: CreateGroupChatRequest): Chat
+    suspend fun createGroupChat(@Body request: CreateGroupChatRequest): ChatResponse
 
     @GET("chats/{id}/messages")
-    suspend fun getMessages(@Path("id") chatId: Long): List<ChatMessage>
+    suspend fun getMessages(@Path("id") chatId: Long): List<ChatMessageResponse>
 
     @POST("chats/{id}/messages")
     suspend fun postMessage(
         @Path("id") chatId: Long,
         @Body request: PostMessageRequest
-    ): ChatMessage
+    ): ChatMessageResponse
 }

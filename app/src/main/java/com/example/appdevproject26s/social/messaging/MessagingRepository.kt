@@ -8,7 +8,7 @@ class MessagingRepository @Inject constructor(
     private val chatApiService: ChatApiService
 ) {
 
-    suspend fun getChats(): Result<List<Chat>> {
+    suspend fun getChats(): Result<List<ChatResponse>> {
         return try {
             val chats = chatApiService.getMyChats()
             Result.success(chats)
@@ -17,7 +17,7 @@ class MessagingRepository @Inject constructor(
         }
     }
 
-    suspend fun createDirectChat(username: String): Result<Chat> {
+    suspend fun createDirectChat(username: String): Result<ChatResponse> {
         return try {
             val chat = chatApiService.createDirectChat(CreateDirectChatRequest(username))
             Result.success(chat)
@@ -26,7 +26,7 @@ class MessagingRepository @Inject constructor(
         }
     }
 
-    suspend fun createGroupChat(name: String, usernames: List<String>): Result<Chat> {
+    suspend fun createGroupChat(name: String, usernames: List<String>): Result<ChatResponse> {
         return try {
             val chat = chatApiService.createGroupChat(CreateGroupChatRequest(name, usernames))
             Result.success(chat)
@@ -35,7 +35,7 @@ class MessagingRepository @Inject constructor(
         }
     }
 
-    suspend fun getMessages(chatId: Long): Result<List<ChatMessage>> {
+    suspend fun getMessages(chatId: Long): Result<List<ChatMessageResponse>> {
         return try {
             val messages = chatApiService.getMessages(chatId)
             Result.success(messages)
@@ -44,7 +44,7 @@ class MessagingRepository @Inject constructor(
         }
     }
 
-    suspend fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null): Result<ChatMessage> {
+    suspend fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null): Result<ChatMessageResponse> {
         return try {
             val message = chatApiService.postMessage(chatId, PostMessageRequest(content, routeId, pinId))
             Result.success(message)

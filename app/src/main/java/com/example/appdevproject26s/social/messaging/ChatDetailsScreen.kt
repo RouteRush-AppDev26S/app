@@ -1,8 +1,8 @@
 package com.example.appdevproject26s.social.messaging
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,7 +36,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ChatDetailContent(
-    messages: List<ChatMessage>,
+    messages: List<ChatMessageResponse>,
     onSendMessage: (String) -> Unit,
     myUsername: String,
     modifier: Modifier = Modifier
@@ -66,8 +67,7 @@ fun ChatDetailContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(items = messages, key = { it.id ?: 0L }) { message ->
-                    val isMe = myUsername == message.sender?.username
-                    Log.d("ISME", "${isMe.toString()} $myUsername ${message.sender?.username}")
+                    val isMe = myUsername == message.senderUsername
                     MessageBubble(message = message, isMe = isMe)
                 }
             }
@@ -110,7 +110,7 @@ fun ChatDetailContent(
 }
 
 @Composable
-fun MessageBubble(message: ChatMessage, isMe: Boolean) {
+fun MessageBubble(message: ChatMessageResponse, isMe: Boolean) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
