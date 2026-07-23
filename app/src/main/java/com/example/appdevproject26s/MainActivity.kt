@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.appdevproject26s.gamification.achievements.AchievementScreen
 import com.example.appdevproject26s.gamification.challenges.ChallengeScreen
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardScreen
 import com.example.appdevproject26s.profile.ProfileScreen
@@ -46,6 +47,7 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("profile") { ProfileScreen(navController = navController) }
         composable("leaderboard") { LeaderboardScreen(navController) }
         composable("challenge") { ChallengeScreen(navController) }
+        composable("achievements") { AchievementScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
     }
 }
