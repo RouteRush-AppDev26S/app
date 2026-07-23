@@ -1,11 +1,55 @@
 package com.example.appdevproject26s.social.messaging
 
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class MessagingRepository @Inject constructor() {
+@Singleton
+class MessagingRepository @Inject constructor(
+    private val chatApiService: ChatApiService
+) {
 
-    suspend fun getChats(): List<String> {
-        // check local db -> make call to backend to check for update
-        return listOf("Fetched Chat A", "Fetched Chat B", "Fetched Chat C", "Just placeholders")
+    suspend fun getChats(): Result<List<Chat>> {
+        return try {
+            val chats = chatApiService.getMyChats()
+            Result.success(chats)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createDirectChat(username: String): Result<Chat> {
+        return try {
+            val chat = chatApiService.createDirectChat(CreateDirectChatRequest(username))
+            Result.success(chat)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createGroupChat(name: String, usernames: List<String>): Result<Chat> {
+        return try {
+            val chat = chatApiService.createGroupChat(CreateGroupChatRequest(name, usernames))
+            Result.success(chat)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getMessages(chatId: Long): Result<List<ChatMessage>> {
+        return try {
+            val messages = chatApiService.getMessages(chatId)
+            Result.success(messages)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null): Result<ChatMessage> {
+        return try {
+            val message = chatApiService.postMessage(chatId, PostMessageRequest(content, routeId, pinId))
+            Result.success(message)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
