@@ -16,7 +16,7 @@ import kotlin.collections.emptyList
 
 @HiltViewModel
 class MessagingScreenViewModel @Inject constructor(
-    private val messagingRepo: MessagingRepository,
+    private val messagingRepository: MessagingRepository,
     private val authRepo: AuthRepository
 
 ) : ViewModel() {
@@ -27,16 +27,23 @@ class MessagingScreenViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
-    private val _chats = MutableStateFlow<List<String>>(emptyList())
-    val chats = _chats.asStateFlow()
+    private val _chats = MutableStateFlow<List<Chat>>(emptyList())
+    val chats: StateFlow<List<Chat>> = _chats.asStateFlow()
 
     init {
-        loadChats()
+        fetchChats()
     }
 
-    private fun loadChats() {
+    fun fetchChats() {
         viewModelScope.launch {
-            _chats.value = messagingRepo.getChats()
+            messagingRepository.getChats().fold(
+                onSuccess = { chatList ->
+                    _chats.value = chatList
+                },
+                onFailure = {
+                    _chats.value = emptyList()
+                }
+            )
         }
     }
 }
