@@ -22,8 +22,9 @@ data class UserProfileResponse(
     val username: String,
     val xp: Int,
     val level: Int,
-    val admin: Boolean
-
+    val admin: Boolean,
+    val xpIntoLevel: Int,
+    val xpForNextLevel: Int
 )
 
 data class UpdateProfileRequest(
