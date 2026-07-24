@@ -1,5 +1,6 @@
 package com.example.appdevproject26s.social.messaging
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -35,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -51,6 +55,8 @@ fun MessagingScreen(
     val selectedChat by messagingViewModel.selectedChat.collectAsState()
     val isLoggedIn by messagingViewModel.isLoggedIn.collectAsState()
     val currentUser by messagingViewModel.currentUser.collectAsState()
+
+    val unreadChatIds by messagingViewModel.unreadChatIds.collectAsState()
 
     val onBackClick: (() -> Unit)? =
         if (selectedChat != null) {
@@ -82,8 +88,6 @@ fun MessagingScreen(
         } else {
 
             if (selectedChat != null) {
-                val currentChat = selectedChat!!
-                val chatId = currentChat.id ?: 0L
                 val messages by messagingViewModel.messages.collectAsState(initial = emptyList())
 
                 // Chat Detail View
@@ -111,9 +115,12 @@ fun MessagingScreen(
                     } else {
                         LazyColumn() {
                             items(items = chats, key = { it.id ?: 0L }) { chat ->
-                                ChatCard(chat) {
-                                    messagingViewModel.selectChat(chat)
-                                }
+                                val isUnread = unreadChatIds.contains(chat.id ?: 0L)
+                                ChatCard(
+                                    chat = chat,
+                                    isUnread = isUnread,
+                                    onClick =  { messagingViewModel.selectChat(chat) }
+                                )
                             }
                         }
                     }
@@ -149,6 +156,7 @@ fun MessagingScreen(
 @Composable
 fun ChatCard(
     chat: ChatResponse,
+    isUnread: Boolean,
     onClick: () -> Unit
 ) {
     Card(
@@ -157,11 +165,31 @@ fun ChatCard(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable(onClick = onClick)
     ) {
-        Text(
-            text = chat.name ?: "Chat #${chat.id}",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = chat.name ?: "Chat #${chat.id}",
+                style = if (isUnread) {
+                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                } else {
+                    MaterialTheme.typography.titleMedium
+                },
+                )
+
+            // Visual unread indicator badge (dot)
+            if (isUnread) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+                )
+            }
+        }
     }
 }
 

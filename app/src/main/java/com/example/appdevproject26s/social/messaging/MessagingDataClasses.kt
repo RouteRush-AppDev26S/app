@@ -17,6 +17,17 @@ data class ChatMessageResponse(
     val sentAt: String?
 )
 
+data class InboxResponse(
+    val id: Long?,
+    val chatId: Long?,
+    val senderId: Long?,
+    val senderUsername: String?,
+    val content: String?,
+    val routeId: Long?,
+    val pinId: Long?,
+    val sentAt: String?
+)
+
 data class CreateDirectChatRequest(val username: String)
 data class CreateGroupChatRequest(val name: String, val usernames: List<String>)
 data class PostMessageRequest(val content: String?, val routeId: Long?, val pinId: Long?)

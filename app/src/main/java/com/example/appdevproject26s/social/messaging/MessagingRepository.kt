@@ -1,5 +1,6 @@
 package com.example.appdevproject26s.social.messaging
 
+import android.util.Log
 import com.example.appdevproject26s.network.WebSocketManager
 import com.google.gson.Gson
 import io.reactivex.disposables.Disposable
@@ -62,6 +63,20 @@ class MessagingRepository @Inject constructor(
                 onMessageReceived(response)
             } catch (e: Exception) {
                 // Handle parsing error if needed
+            }
+        }
+    }
+
+    fun observeInbox(userId: Long, onNewMessage: (InboxResponse) -> Unit): Disposable {
+        val destination = "/topic/user/$userId/inbox"
+
+        return webSocketManager.subscribe(destination) { jsonPayload ->
+            try {
+                val inboxResponse = gson.fromJson(jsonPayload, InboxResponse::class.java)
+                onNewMessage(inboxResponse)
+            } catch (e: Exception) {
+                // Handle parsing error
+                Log.e("ERROR", "-> Failed to parse incoming inbox JSON: ${e.message}", e)
             }
         }
     }
