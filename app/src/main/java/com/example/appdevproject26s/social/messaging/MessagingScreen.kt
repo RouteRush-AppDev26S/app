@@ -91,6 +91,7 @@ fun MessagingScreen(
                     messages = messages,
                     onSendMessage = messagingViewModel::sendMessage,
                     myUsername = currentUser?.username ?: "",
+                    isGroupChat = selectedChat?.isGroup ?: false
                 )
             } else {
 

@@ -39,6 +39,7 @@ fun ChatDetailContent(
     messages: List<ChatMessageResponse>,
     onSendMessage: (String) -> Unit,
     myUsername: String,
+    isGroupChat: Boolean,
     modifier: Modifier = Modifier
 ) {
     var textState by remember { mutableStateOf("") }
@@ -68,7 +69,7 @@ fun ChatDetailContent(
             ) {
                 items(items = messages, key = { it.id ?: 0L }) { message ->
                     val isMe = myUsername == message.senderUsername
-                    MessageBubble(message = message, isMe = isMe)
+                    MessageBubble(message = message, isMe = isMe, showSender = isGroupChat)
                 }
             }
 
@@ -110,7 +111,7 @@ fun ChatDetailContent(
 }
 
 @Composable
-fun MessageBubble(message: ChatMessageResponse, isMe: Boolean) {
+fun MessageBubble(message: ChatMessageResponse, isMe: Boolean, showSender: Boolean = false) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
@@ -125,7 +126,7 @@ fun MessageBubble(message: ChatMessageResponse, isMe: Boolean) {
                 Column(
                     modifier = Modifier.padding(12.dp)
                 ) {
-                    if (!isMe && !message.senderUsername.isNullOrBlank()) {
+                    if (!isMe && !message.senderUsername.isNullOrBlank() && showSender) {
                         Text(
                             text = message.senderUsername,
                             style = MaterialTheme.typography.labelSmall,
