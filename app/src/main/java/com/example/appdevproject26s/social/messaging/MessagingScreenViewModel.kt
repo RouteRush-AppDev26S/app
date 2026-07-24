@@ -55,6 +55,12 @@ class MessagingScreenViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _createGroupChatUsernames = MutableStateFlow<List<String>>(emptyList())
+    val createGroupChatUsernames: StateFlow<List<String>> = _createGroupChatUsernames.asStateFlow()
+
+    private val _inputGroupChatName = MutableStateFlow<String>("")
+    val inputGroupChatName: StateFlow<String> = _inputGroupChatName.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val messages: StateFlow<List<ChatMessageResponse>> =
         _selectedChat
@@ -152,6 +158,18 @@ class MessagingScreenViewModel @Inject constructor(
         }
     }
 
+    fun createGroupChat(name: String, usernames: List<String>, onChatCreated: (ChatResponse) -> Unit) {
+        viewModelScope.launch {
+            messagingRepository.createGroupChat(name, usernames).fold(
+                onSuccess = { chat ->
+                    fetchChats() // Refresh chat list
+                    onChatCreated(chat)
+                },
+                onFailure = { /* Handle error if needed */ }
+            )
+        }
+    }
+
     fun sendMessage(text: String) {
         val chatId = _selectedChat.value?.id ?: return
         viewModelScope.launch {
@@ -161,6 +179,19 @@ class MessagingScreenViewModel @Inject constructor(
                 },
                 onFailure = { /* Handle error if needed */ }
             )
+        }
+    }
+
+    fun updateInputGroupChatName(it: String) {
+        _inputGroupChatName.value = it
+    }
+
+    fun toggleUsernameForGroupChat(username: String) {
+        val currentList = _createGroupChatUsernames.value
+        _createGroupChatUsernames.value = if (currentList.contains(username)) {
+            currentList - username
+        } else {
+            currentList + username
         }
     }
 

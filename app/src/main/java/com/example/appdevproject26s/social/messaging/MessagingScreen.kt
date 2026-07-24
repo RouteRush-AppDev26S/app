@@ -1,18 +1,25 @@
 package com.example.appdevproject26s.social.messaging
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +91,7 @@ fun MessagingScreen(
                     messages = messages,
                     onSendMessage = messagingViewModel::sendMessage,
                     myUsername = currentUser?.username ?: "",
+                    isGroupChat = selectedChat?.isGroup ?: false
                 )
             } else {
 
@@ -166,6 +174,9 @@ fun NewChatDialog(
     val friends by viewModel.friends.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
+    val createGroupChatUsernames by viewModel.createGroupChatUsernames.collectAsState()
+    val inputGroupChatName by viewModel.inputGroupChatName.collectAsState()
+
     // Filter friends based on search query matching their username
     val filteredFriends = friends.filter { friendship ->
         val otherUsername = friendship.otherUsername
@@ -174,9 +185,40 @@ fun NewChatDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Direct Chat") },
+        title = { Text(if (createGroupChatUsernames.size > 1) "New Group Chat" else "New Chat") },
         text = {
             Column {
+                // 1. Show selected friends above search if any are selected
+                if (createGroupChatUsernames.isNotEmpty()) {
+                    Text("Selected (${createGroupChatUsernames.size}):", style = MaterialTheme.typography.labelMedium)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(createGroupChatUsernames) { username ->
+                            FilterChip(
+                                selected = true,
+                                onClick = { viewModel.toggleUsernameForGroupChat(username) },
+                                label = { Text(username) },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove")
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // 2. Show Group Chat Name Field if 2 or more users are selected
+                if (createGroupChatUsernames.size > 1) {
+                    OutlinedTextField(
+                        value = inputGroupChatName,
+                        onValueChange = { viewModel.updateInputGroupChatName(it) },
+                        label = { Text("Group Chat Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.updateSearchQuery(it) },
@@ -193,30 +235,70 @@ fun NewChatDialog(
                         .heightIn(max = 250.dp)
                 ) {
                     items(filteredFriends) { friendship ->
-                        val username = friendship?.otherUsername ?: "Unknown"
+                        val username = friendship.otherUsername ?: "Unknown"
+                        val isChecked = createGroupChatUsernames.contains(username)
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                                 .clickable {
-                                    viewModel.createDirectChat(username) { createdChat ->
-                                        onChatSelected(createdChat)
-                                    }
+                                    viewModel.toggleUsernameForGroupChat(username)
                                 }
                         ) {
-                            Text(
-                                text = username,
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = username,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Checkbox(
+                                    checked = isChecked,
+                                    onCheckedChange = { viewModel.toggleUsernameForGroupChat(username) }
+                                )
+                            }
                         }
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+
+                // Final Action Button to Create Chat (Direct or Group)
+                Button(
+                    onClick = {
+                        if (createGroupChatUsernames.size == 1) {
+                            // Direct Chat route
+                            viewModel.createDirectChat(createGroupChatUsernames.first()) { chat ->
+                                onChatSelected(chat)
+                            }
+                        } else if (createGroupChatUsernames.size > 1 && inputGroupChatName.isNotBlank()) {
+                            // Group Chat route
+                            viewModel.createGroupChat(inputGroupChatName, createGroupChatUsernames.toList()) { chat ->
+                                onChatSelected(chat)
+                            }
+                        }
+                    },
+                    enabled = when {
+                        createGroupChatUsernames.size == 1 -> true
+                        createGroupChatUsernames.size > 1 -> inputGroupChatName.isNotBlank()
+                        else -> false
+                    }
+                ) {
+                    Text(if (createGroupChatUsernames.size > 1) "Create Group" else "Start Chat")
+                }
             }
         }
     )
