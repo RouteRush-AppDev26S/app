@@ -32,7 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun ChatDetailContent(
@@ -116,10 +119,12 @@ fun MessageBubble(message: ChatMessageResponse, isMe: Boolean, showSender: Boole
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
     ) {
+        val senderColor = message.senderUsername?.toNameColor(MaterialTheme.colorScheme.surfaceVariant, 0.5f) ?: MaterialTheme.colorScheme.surfaceVariant
+
         BoxWithConstraints {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = if (isMe) MaterialTheme.colorScheme.primaryContainer else senderColor
                 ),
                 modifier = Modifier.widthIn(max = maxWidth * 0.8f)
             ) {
@@ -142,4 +147,55 @@ fun MessageBubble(message: ChatMessageResponse, isMe: Boolean, showSender: Boole
             }
         }
     }
+}
+
+fun String.toNameColor(inputColor: Color, impact: Float ): Color {
+    val hash = this.hashCode()
+
+    val hue = (Math.abs(hash) % 360).toFloat()
+
+    val inputHsl = inputColor.toHsl()
+    val inputHue = inputHsl[0]
+    val inputSaturation = inputHsl[1]
+    val inputLightness = inputHsl[2]
+
+    val clampedImpact = impact.coerceIn(0f, 1f)
+
+    var diff = (hue - inputHue) % 360
+    if (diff < -180f) diff += 360f
+    if (diff > 180f) diff -= 360f
+
+    val blendedHue = (inputHue + diff * clampedImpact + 360f) % 360f
+
+    return Color.hsl(hue = blendedHue, saturation = inputSaturation, lightness = inputLightness)
+}
+
+fun Color.toHsl(): FloatArray {
+    val r = red
+    val g = green
+    val b = blue
+
+    val maxVal = max(r, max(g, b))
+    val minVal = min(r, min(g, b))
+
+    var h = 0f
+    val s: Float
+    val l = (maxVal + minVal) / 2f
+
+    if (maxVal == minVal) {
+        h = 0f
+        s = 0f // Achromatic (shade of grey)
+    } else {
+        val d = maxVal - minVal
+        s = if (l > 0.5f) d / (2f - maxVal - minVal) else d / (maxVal + minVal)
+
+        h = when (maxVal) {
+            r -> (g - b) / d + (if (g < b) 6f else 0f)
+            g -> (b - r) / d + 2f
+            else -> (r - g) / d + 4f
+        }
+        h *= 60f
+    }
+
+    return floatArrayOf(h, s, l)
 }
