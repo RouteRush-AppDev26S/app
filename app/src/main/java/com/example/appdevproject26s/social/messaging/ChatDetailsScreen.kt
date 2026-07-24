@@ -125,6 +125,14 @@ fun MessageBubble(message: ChatMessageResponse, isMe: Boolean) {
                 Column(
                     modifier = Modifier.padding(12.dp)
                 ) {
+                    if (!isMe && !message.senderUsername.isNullOrBlank()) {
+                        Text(
+                            text = message.senderUsername,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     Text(
                         text = message.content ?: "",
                         style = MaterialTheme.typography.bodyLarge
