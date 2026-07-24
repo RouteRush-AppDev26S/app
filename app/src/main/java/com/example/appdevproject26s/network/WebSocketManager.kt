@@ -50,7 +50,7 @@ class WebSocketManager @Inject constructor() {
         stompClient.connect(headers)
     }
 
-    fun subscribeToChat(destination: String, onMessageReceived: (String) -> Unit): Disposable {
+    fun subscribe(destination: String, onMessageReceived: (String) -> Unit): Disposable {
         return stompClient.topic(destination)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -61,7 +61,7 @@ class WebSocketManager @Inject constructor() {
             })
     }
 
-    fun sendMessage(destination: String, jsonPayload: String) {
+    fun send(destination: String, jsonPayload: String) {
         val sendDisposable = stompClient.send(destination, jsonPayload)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())

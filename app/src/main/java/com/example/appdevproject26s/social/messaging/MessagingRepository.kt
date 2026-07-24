@@ -52,11 +52,11 @@ class MessagingRepository @Inject constructor(
     fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null) {
         val request = PostMessageRequest(content, routeId, pinId)
         val jsonPayload = gson.toJson(request)
-        webSocketManager.sendMessage("/app/chat/$chatId", jsonPayload)
+        webSocketManager.send("/app/chat/$chatId", jsonPayload)
     }
 
     fun observeChat(chatId: Long, onMessageReceived: (ChatMessageResponse) -> Unit): Disposable {
-        return webSocketManager.subscribeToChat("/topic/chat/$chatId") { jsonPayload ->
+        return webSocketManager.subscribe("/topic/chat/$chatId") { jsonPayload ->
             try {
                 val response = gson.fromJson(jsonPayload, ChatMessageResponse::class.java)
                 onMessageReceived(response)
