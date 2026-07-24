@@ -9,15 +9,13 @@ import com.example.appdevproject26s.user.UserProfileResponse
 import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,8 +35,6 @@ class MessagingScreenViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
-
-    private val _messageRefreshTrigger = MutableSharedFlow<Unit>(replay = 0)
 
     private val _currentUser = MutableStateFlow<UserProfileResponse?>(null)
     val currentUser: StateFlow<UserProfileResponse?> = _currentUser.asStateFlow()
@@ -65,16 +61,35 @@ class MessagingScreenViewModel @Inject constructor(
     val messages: StateFlow<List<ChatMessageResponse>> =
         _selectedChat
             .flatMapLatest { chat ->
-                flow {
-                    if (chat?.id != null) {
-                        // Emit initial load
-                        fetchMessages(chat.id)
+                callbackFlow {
+                    if (chat?.id == null) {
+                        trySend(emptyList())
+                        awaitClose {}
+                        return@callbackFlow
+                    }
 
-                        _messageRefreshTrigger.collect {
-                            fetchMessages(chat.id)
+                    var currentMessages = listOf<ChatMessageResponse>()
+
+                    // Fetch initial message history via REST
+                    messagingRepository.getMessages(chat.id).fold(
+                        onSuccess = { initialList ->
+                            currentMessages = initialList
+                            trySend(currentMessages)
+                        },
+                        onFailure = {
+                            currentMessages = emptyList()
+                            trySend(currentMessages)
                         }
-                    } else {
-                        emit(emptyList())
+                    )
+
+                    // then subscribe to chat channel
+                    val subscription = messagingRepository.observeChat(chat.id) { incomingMessage ->
+                        currentMessages = currentMessages + incomingMessage
+                        trySend(currentMessages)
+                    }
+
+                    awaitClose {
+                        subscription.dispose()
                     }
                 }
             }
@@ -84,11 +99,9 @@ class MessagingScreenViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    private suspend fun kotlinx.coroutines.flow.FlowCollector<List<ChatMessageResponse>>.fetchMessages(chatId: Long) {
-        messagingRepository.getMessages(chatId).fold(
-            onSuccess = { emit(it) },
-            onFailure = { emit(emptyList()) }
-        )
+    fun sendMessage(text: String) {
+        val chatId = _selectedChat.value?.id ?: return
+        messagingRepository.postMessage(chatId, text)
     }
 
     init {
@@ -164,18 +177,6 @@ class MessagingScreenViewModel @Inject constructor(
                 onSuccess = { chat ->
                     fetchChats() // Refresh chat list
                     onChatCreated(chat)
-                },
-                onFailure = { /* Handle error if needed */ }
-            )
-        }
-    }
-
-    fun sendMessage(text: String) {
-        val chatId = _selectedChat.value?.id ?: return
-        viewModelScope.launch {
-            messagingRepository.postMessage(chatId, text).fold(
-                onSuccess = {
-                    _messageRefreshTrigger.emit(Unit)
                 },
                 onFailure = { /* Handle error if needed */ }
             )

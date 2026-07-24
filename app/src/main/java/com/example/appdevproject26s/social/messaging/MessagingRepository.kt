@@ -1,12 +1,17 @@
 package com.example.appdevproject26s.social.messaging
 
+import com.example.appdevproject26s.network.WebSocketManager
+import com.google.gson.Gson
+import io.reactivex.disposables.Disposable
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class MessagingRepository @Inject constructor(
-    private val chatApiService: ChatApiService
+    private val chatApiService: ChatApiService,
+    private val webSocketManager: WebSocketManager
 ) {
+    private val gson = Gson()
 
     suspend fun getChats(): Result<List<ChatResponse>> {
         return try {
@@ -44,12 +49,20 @@ class MessagingRepository @Inject constructor(
         }
     }
 
-    suspend fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null): Result<ChatMessageResponse> {
-        return try {
-            val message = chatApiService.postMessage(chatId, PostMessageRequest(content, routeId, pinId))
-            Result.success(message)
-        } catch (e: Exception) {
-            Result.failure(e)
+    fun postMessage(chatId: Long, content: String?, routeId: Long? = null, pinId: Long? = null) {
+        val request = PostMessageRequest(content, routeId, pinId)
+        val jsonPayload = gson.toJson(request)
+        webSocketManager.sendMessage("/app/chat/$chatId", jsonPayload)
+    }
+
+    fun observeChat(chatId: Long, onMessageReceived: (ChatMessageResponse) -> Unit): Disposable {
+        return webSocketManager.subscribeToChat("/topic/chat/$chatId") { jsonPayload ->
+            try {
+                val response = gson.fromJson(jsonPayload, ChatMessageResponse::class.java)
+                onMessageReceived(response)
+            } catch (e: Exception) {
+                // Handle parsing error if needed
+            }
         }
     }
 }

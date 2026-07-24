@@ -17,10 +17,4 @@ interface ChatApiService {
 
     @GET("chats/{id}/messages")
     suspend fun getMessages(@Path("id") chatId: Long): List<ChatMessageResponse>
-
-    @POST("chats/{id}/messages")
-    suspend fun postMessage(
-        @Path("id") chatId: Long,
-        @Body request: PostMessageRequest
-    ): ChatMessageResponse
 }

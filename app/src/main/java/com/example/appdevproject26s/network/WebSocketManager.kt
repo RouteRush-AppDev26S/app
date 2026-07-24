@@ -50,7 +50,7 @@ class WebSocketManager @Inject constructor() {
         stompClient.connect(headers)
     }
 
-    fun subscribeToTopic(destination: String, onMessageReceived: (String) -> Unit): Disposable {
+    fun subscribeToChat(destination: String, onMessageReceived: (String) -> Unit): Disposable {
         return stompClient.topic(destination)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
