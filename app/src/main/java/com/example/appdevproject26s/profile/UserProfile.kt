@@ -92,38 +92,36 @@ fun UserProfileContent(
                 }
             }
 
-            if (personalBests.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(0.9f),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Personal Bests",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        personalBests.forEach { best ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = best.description,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = formatPersonalBestValue(best),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
+                    Text(
+                        text = "Personal Bests",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    personalBests.forEach { best ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = best.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatPersonalBestValue(best),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                 }
@@ -148,7 +146,11 @@ fun UserProfileContent(
     }
 }
 
-private fun formatPersonalBestValue(best: PersonalBest): String = when (best.type) {
-    "LONGEST_ROUTE_DISTANCE" -> "%.1f km".format(best.value / 1000.0)
-    else -> best.value.toInt().toString()
+private fun formatPersonalBestValue(best: PersonalBest): String {
+    if (best.achievedAt == null) return "Not yet achieved"
+
+    return when (best.type) {
+        "LONGEST_ROUTE_DISTANCE" -> "%.1f km".format(best.value / 1000.0)
+        else -> best.value.toInt().toString()
+    }
 }

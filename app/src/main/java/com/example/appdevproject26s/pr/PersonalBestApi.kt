@@ -6,7 +6,7 @@ data class PersonalBest(
     val type: String,
     val description: String,
     val value: Double,
-    val achievedAt: String
+    val achievedAt: String?
 )
 
 interface PersonalBestApi {
