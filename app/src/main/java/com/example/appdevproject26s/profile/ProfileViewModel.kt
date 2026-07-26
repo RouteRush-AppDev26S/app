@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.auth.AuthState
+import com.example.appdevproject26s.pr.PersonalBest
+import com.example.appdevproject26s.pr.PersonalBestApi
 import com.example.appdevproject26s.user.UserProfileResponse
 import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val personalBestApi: PersonalBestApi
 ) : ViewModel() {
 
     // Observe global login status from the repository
@@ -31,6 +34,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _userProfile = MutableStateFlow<UserProfileResponse?>(null)
     val userProfile: StateFlow<UserProfileResponse?> = _userProfile.asStateFlow()
+
+    private val _personalBests = MutableStateFlow<List<PersonalBest>>(emptyList())
+    val personalBests: StateFlow<List<PersonalBest>> = _personalBests.asStateFlow()
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState = _authState.asStateFlow()
@@ -73,6 +79,15 @@ class ProfileViewModel @Inject constructor(
                     }
                 }
             )
+        }
+    }
+
+    fun fetchPersonalBests() {
+        viewModelScope.launch {
+            try {
+                _personalBests.value = personalBestApi.getPersonalBests()
+            } catch (e: Exception) {
+            }
         }
     }
 

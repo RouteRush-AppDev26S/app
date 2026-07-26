@@ -6,6 +6,7 @@ import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
 import com.example.appdevproject26s.network.BACKEND_REST_URL
+import com.example.appdevproject26s.pr.PersonalBestApi
 import com.example.appdevproject26s.social.friends.FriendApiService
 import com.example.appdevproject26s.social.messaging.ChatApiService
 import com.example.appdevproject26s.steps.StepsApi
@@ -90,5 +91,11 @@ object BackendNetworkModule {
     @Singleton
     fun provideAchievementApi(retrofit: Retrofit): AchievementApi {
         return retrofit.create(AchievementApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePersonalBestApi(retrofit: Retrofit): PersonalBestApi {
+        return retrofit.create(PersonalBestApi::class.java)
     }
 }

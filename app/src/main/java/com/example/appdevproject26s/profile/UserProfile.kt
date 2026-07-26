@@ -22,11 +22,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.appdevproject26s.pr.PersonalBest
 import com.example.appdevproject26s.user.UserProfileResponse
 
 @Composable
 fun UserProfileContent(
     userProfile: UserProfileResponse?,
+    personalBests: List<PersonalBest>,
     onLogout: () -> Unit
 ) {
     Column(
@@ -89,6 +91,41 @@ fun UserProfileContent(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Personal Bests",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    personalBests.forEach { best ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = best.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatPersonalBestValue(best),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
         } else {
 
             Text(
@@ -106,5 +143,14 @@ fun UserProfileContent(
         ) {
             Text("Log Out")
         }
+    }
+}
+
+private fun formatPersonalBestValue(best: PersonalBest): String {
+    if (best.achievedAt == null) return "Not yet achieved"
+
+    return when (best.type) {
+        "LONGEST_ROUTE_DISTANCE" -> "%.1f km".format(best.value / 1000.0)
+        else -> best.value.toInt().toString()
     }
 }
