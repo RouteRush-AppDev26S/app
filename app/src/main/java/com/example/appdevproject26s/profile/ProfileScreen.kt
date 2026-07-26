@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.appdevproject26s.ScreenScaffold
 
@@ -21,11 +20,13 @@ fun ProfileScreen(
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userProfile by profileViewModel.userProfile.collectAsState(initial = null)
+    val personalBests by profileViewModel.personalBests.collectAsState(initial = emptyList())
     val isLoggedIn by profileViewModel.isLoggedIn.collectAsState(initial = false)
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             profileViewModel.fetchUserProfile()
+            profileViewModel.fetchPersonalBests()
         }
     }
 
@@ -41,13 +42,12 @@ fun ProfileScreen(
             contentAlignment = Alignment.Center
         ) {
             if (isLoggedIn) {
-                // View 1: Logged-In User Profile Dashboard
                 UserProfileContent(
                     userProfile = userProfile,
+                    personalBests = personalBests,
                     onLogout = { profileViewModel.logout() }
                 )
             } else {
-                // View 2: Authentication Wizard (Login or Register)
                 AuthWizardContent(
                     viewModel = profileViewModel
                 )
