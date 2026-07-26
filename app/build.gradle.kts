@@ -80,4 +80,9 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.converter.scalars)
     implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation(libs.stompprotocolandroid)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
+    implementation(libs.rxandroid)
+    implementation(libs.rxjava)
 }

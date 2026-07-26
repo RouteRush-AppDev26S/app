@@ -5,6 +5,7 @@ import com.example.appdevproject26s.gamification.challenges.ChallengeApi
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardApi
 import com.example.appdevproject26s.auth.AuthApiService
 import com.example.appdevproject26s.auth.AuthInterceptor
+import com.example.appdevproject26s.network.BACKEND_REST_URL
 import com.example.appdevproject26s.social.friends.FriendApiService
 import com.example.appdevproject26s.social.messaging.ChatApiService
 import com.example.appdevproject26s.steps.StepsApi
@@ -23,8 +24,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object BackendNetworkModule {
 
-    private const val BACKEND_BASE_URL = "https://backend-g7be.onrender.com/"
-
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
@@ -37,7 +36,7 @@ object BackendNetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BACKEND_BASE_URL)
+            .baseUrl(BACKEND_REST_URL)
             .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
