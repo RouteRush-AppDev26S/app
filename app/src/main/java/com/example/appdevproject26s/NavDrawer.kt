@@ -2,6 +2,8 @@ package com.example.appdevproject26s
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.MilitaryTech
@@ -127,6 +129,40 @@ fun NavDrawer(
                     onClick = {
                         drawerStateScope.launch { drawerState.close() }
                         navController.navigate("achievements") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.stats_title)) },
+                    selected = currentRoute == "statistics",
+                    icon = {
+                        Icon(
+                            Icons.Default.BarChart,
+                            contentDescription = stringResource(R.string.stats_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("statistics") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(R.string.heatmap_title)) },
+                    selected = currentRoute == "heatmap",
+                    icon = {
+                        Icon(
+                            Icons.Default.BlurOn,
+                            contentDescription = stringResource(R.string.heatmap_title)
+                        )
+                    },
+                    onClick = {
+                        drawerStateScope.launch { drawerState.close() }
+                        navController.navigate("heatmap") {
                             popUpTo("home") { saveState = true }
                             launchSingleTop = true
                         }

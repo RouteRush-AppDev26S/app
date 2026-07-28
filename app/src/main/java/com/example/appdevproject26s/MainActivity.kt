@@ -23,6 +23,9 @@ import com.example.appdevproject26s.route.HomeScreen
 import com.example.appdevproject26s.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
 import com.example.appdevproject26s.social.messaging.MessagingScreen
+import com.example.appdevproject26s.stats.AnalyticsRecorder
+import com.example.appdevproject26s.stats.DashboardScreen
+import com.example.appdevproject26s.stats.HeatmapScreen
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,9 +43,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var authRepository: AuthRepository
 
+    @Inject
+    lateinit var analyticsRecorder: AnalyticsRecorder
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        analyticsRecorder.start(lifecycleScope)
         setContent {
             AppDevProject26STheme {
                 NavigationApp()
@@ -86,6 +93,8 @@ fun NavigationApp(modifier: Modifier = Modifier) {
         composable("leaderboard") { LeaderboardScreen(navController) }
         composable("challenge") { ChallengeScreen(navController) }
         composable("achievements") { AchievementScreen(navController) }
+        composable("statistics") { DashboardScreen(navController) }
+        composable("heatmap") { HeatmapScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
     }
 }
