@@ -1,5 +1,6 @@
 package com.example.appdevproject26s.social.messaging
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appdevproject26s.auth.AuthRepository
@@ -26,9 +27,11 @@ class MessagingScreenViewModel @Inject constructor(
     private val messagingRepository: MessagingRepository,
     private val friendRepository: FriendRepository,
     private val userRepository: UserRepository,
-    private val unreadChatsStore: UnreadChatsStore
-
+    private val unreadChatsStore: UnreadChatsStore,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val chatIdArg: Long? = savedStateHandle.get<String>("chatId")?.toLongOrNull()
 
     val isLoggedIn: StateFlow<Boolean> = authRepo.isLoggedInFlow
         .stateIn(
@@ -147,11 +150,21 @@ class MessagingScreenViewModel @Inject constructor(
             messagingRepository.getChats().fold(
                 onSuccess = { chatList ->
                     _chats.value = chatList
+                    checkAndSelectIncomingChat()
                 },
                 onFailure = {
                     _chats.value = emptyList()
                 }
             )
+        }
+    }
+
+    private fun checkAndSelectIncomingChat() {
+        if (chatIdArg != null && _selectedChat.value == null) {
+            val matchingChat = _chats.value.find { it.id == chatIdArg }
+            if (matchingChat != null) {
+                selectChat(matchingChat)
+            }
         }
     }
 

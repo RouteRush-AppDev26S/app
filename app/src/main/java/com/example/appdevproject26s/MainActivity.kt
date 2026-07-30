@@ -1,12 +1,16 @@
 package com.example.appdevproject26s
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -17,6 +21,7 @@ import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.gamification.achievements.AchievementScreen
 import com.example.appdevproject26s.gamification.challenges.ChallengeScreen
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardScreen
+import com.example.appdevproject26s.modules.AppNotificationManager
 import com.example.appdevproject26s.network.WebSocketManager
 import com.example.appdevproject26s.profile.ProfileScreen
 import com.example.appdevproject26s.route.HomeScreen
@@ -27,7 +32,6 @@ import com.example.appdevproject26s.social.messaging.MessagingScreen
 import com.example.appdevproject26s.social.messaging.UnreadChatsStore
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 import com.example.appdevproject26s.user.UserRepository
-
 import dagger.hilt.android.AndroidEntryPoint
 import io.reactivex.disposables.Disposable
 import jakarta.inject.Inject
@@ -53,14 +57,29 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var unreadChatsStore: UnreadChatsStore
 
+    @Inject
+    lateinit var appNotificationManager: AppNotificationManager
+
     private var globalInboxSubscription: Disposable? = null
+
+    private var navigatedChatIdState by mutableStateOf<Long?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val initialChatId = intent?.getLongExtra("EXTRA_CHAT_ID", -1L).takeIf { it != -1L }
+        if (initialChatId != null) {
+            navigatedChatIdState = initialChatId
+        }
+
         setContent {
             AppDevProject26STheme {
-                NavigationApp()
+                NavigationApp(
+                    navigationChatId = navigatedChatIdState,
+                    onNavigated = { navigatedChatIdState = null }
+                )
+
             }
         }
 
@@ -89,6 +108,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun handleNotificationIntent(intent: Intent) {
+        val chatId = intent.getLongExtra("EXTRA_CHAT_ID", -1L).takeIf { it != -1L }
+        Log.d("NOTIFICATION_DEBUG", "onNewIntent with chatId: $chatId")
+        if (chatId != null) {
+            navigatedChatIdState = chatId
+        }
+    }
+
     private fun startGlobalInboxListener() {
         if (globalInboxSubscription != null) return
 
@@ -103,6 +130,11 @@ class MainActivity : ComponentActivity() {
 
                         if (chatId != null) {
                             if (senderId != currentUserId) {
+                                appNotificationManager.showMessageNotification(
+                                    senderName = newMessage.senderUsername ?: "unknown",
+                                    messageText = newMessage.content ?: "",
+                                    chatId = chatId
+                                    )
                                 lifecycleScope.launch {
                                     unreadChatsStore.addUnreadChatId(chatId)
                                 }
@@ -124,13 +156,23 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NavigationApp(modifier: Modifier = Modifier) {
-
+fun NavigationApp(
+    navigationChatId: Long?,
+    onNavigated: () -> Unit
+) {
     val navController = rememberNavController()
+
+    LaunchedEffect(navigationChatId) {
+        if (navigationChatId != null) {
+            navController.navigate("messaging/$navigationChatId")
+            onNavigated()
+        }
+    }
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable( route = "route" ) { RouteScreen(navController) }
+        composable(route = "messaging/{chatId}") { MessagingScreen(navController) }
         composable( route = "messaging" ) { MessagingScreen(navController) }
         composable("friends") { FriendsScreen(navController = navController) }
         composable("profile") { ProfileScreen(navController = navController) }
