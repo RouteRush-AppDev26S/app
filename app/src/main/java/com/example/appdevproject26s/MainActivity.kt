@@ -112,14 +112,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleNotificationIntent(intent: Intent) {
-        val chatId = intent.getLongExtra("EXTRA_CHAT_ID", -1L).takeIf { it != -1L }
-        Log.d("NOTIFICATION_DEBUG", "onNewIntent with chatId: $chatId")
-        if (chatId != null) {
-            navigatedChatIdState = chatId
-        }
-    }
-
     private fun startGlobalInboxListener() {
         if (globalInboxSubscription != null) return
 
