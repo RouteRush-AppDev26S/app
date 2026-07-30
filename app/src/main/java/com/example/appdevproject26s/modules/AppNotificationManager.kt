@@ -74,4 +74,9 @@ class AppNotificationManager @Inject constructor(
             ContextCompat.getSystemService(context, NotificationManager::class.java)
         notificationManager?.notify(chatId.toInt(), notification)
     }
+
+    fun dismissMessageNotification(chatId: Long) {
+        val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)
+        notificationManager?.cancel(chatId.toInt())
+    }
 }

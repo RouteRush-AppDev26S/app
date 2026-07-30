@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.modules.AppNotificationManager
 import com.example.appdevproject26s.social.friends.FriendRepository
 import com.example.appdevproject26s.social.friends.FriendshipResponse
 import com.example.appdevproject26s.user.UserProfileResponse
@@ -29,6 +30,7 @@ class MessagingScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val unreadChatsStore: UnreadChatsStore,
     private val activeChatStore: ActiveChatStore,
+    private val appNotificationManager: AppNotificationManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -175,6 +177,7 @@ class MessagingScreenViewModel @Inject constructor(
         if (chat?.id != null) {
             viewModelScope.launch {
                 unreadChatsStore.removeUnreadChatId(chat.id)
+                appNotificationManager.dismissMessageNotification(chat.id)
             }
         }
     }
