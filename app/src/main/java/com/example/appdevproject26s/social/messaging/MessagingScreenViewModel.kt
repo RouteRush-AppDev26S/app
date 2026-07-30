@@ -8,7 +8,6 @@ import com.example.appdevproject26s.social.friends.FriendshipResponse
 import com.example.appdevproject26s.user.UserProfileResponse
 import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.reactivex.disposables.Disposable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -113,8 +112,6 @@ class MessagingScreenViewModel @Inject constructor(
         messagingRepository.postMessage(chatId, text)
     }
 
-    private var inboxSubscription: Disposable? = null
-
     init {
         viewModelScope.launch {
             authRepo.isLoggedInFlow.collect { loggedIn ->
@@ -123,7 +120,6 @@ class MessagingScreenViewModel @Inject constructor(
                     fetchChats()
                     fetchFriends()
                 } else {
-                    inboxSubscription?.dispose()
                     _currentUser.value = null
                     _chats.value = emptyList()
                     _friends.value = emptyList()
@@ -137,30 +133,12 @@ class MessagingScreenViewModel @Inject constructor(
             userRepository.getCurrentUser().fold(
                 onSuccess = { user ->
                     _currentUser.value = user
-                    setupInboxListener(user.id)
+//                    setupInboxListener(user.id)
                             },
                 onFailure = { error ->
                     _currentUser.value = null
                 }
             )
-        }
-    }
-
-    private fun setupInboxListener(userId: Long) {
-        inboxSubscription?.dispose()
-
-        inboxSubscription = messagingRepository.observeInbox(userId) { newMessage ->
-            val currentSelectedChatId = _selectedChat.value?.id
-
-            // If a message arrives for a chat the user is NOT currently looking at, mark it unread
-            if (newMessage.chatId != null && newMessage.chatId != currentSelectedChatId) {
-                viewModelScope.launch {
-                    unreadChatsStore.addUnreadChatId(newMessage.chatId)
-                }
-            }
-
-            // Refresh the chat list so it reorders to the top with the latest preview
-            fetchChats()
         }
     }
 
@@ -234,10 +212,5 @@ class MessagingScreenViewModel @Inject constructor(
         } else {
             currentList + username
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        inboxSubscription?.dispose()
     }
 }

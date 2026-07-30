@@ -22,10 +22,14 @@ import com.example.appdevproject26s.profile.ProfileScreen
 import com.example.appdevproject26s.route.HomeScreen
 import com.example.appdevproject26s.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
+import com.example.appdevproject26s.social.messaging.MessagingRepository
 import com.example.appdevproject26s.social.messaging.MessagingScreen
+import com.example.appdevproject26s.social.messaging.UnreadChatsStore
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
+import com.example.appdevproject26s.user.UserRepository
 
 import dagger.hilt.android.AndroidEntryPoint
+import io.reactivex.disposables.Disposable
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -39,6 +43,17 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var userRepository: UserRepository
+
+    @Inject
+    lateinit var messagingRepository: MessagingRepository
+
+    @Inject
+    lateinit var unreadChatsStore: UnreadChatsStore
+
+    private var globalInboxSubscription: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +75,11 @@ class MainActivity : ComponentActivity() {
                             webSocketManager.connect(jwtToken = token)
                             Log.d("TOKEN", token)
                         }
+                        startGlobalInboxListener()
                     } else {
-                        // User is logged out or session expired: Disconnect socket
+                        // User is logged out or session expired: clear inbox subscription, Disconnect socket
+                        globalInboxSubscription?.dispose()
+                        globalInboxSubscription = null
                         if (webSocketManager.isConnected) {
                             webSocketManager.disconnect()
                         }
@@ -69,6 +87,39 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun startGlobalInboxListener() {
+        if (globalInboxSubscription != null) return
+
+        lifecycleScope.launch {
+            userRepository.getCurrentUser().fold(
+                onSuccess = { user ->
+                    val currentUserId = user.id ?: return@fold
+
+                    globalInboxSubscription = messagingRepository.observeInbox(currentUserId) { newMessage ->
+                        val chatId = newMessage.chatId
+                        val senderId = newMessage.senderId
+
+                        if (chatId != null) {
+                            if (senderId != currentUserId) {
+                                lifecycleScope.launch {
+                                    unreadChatsStore.addUnreadChatId(chatId)
+                                }
+                            }
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    Log.e("WEBSOCKET_DEBUG", "-> Failed to setup global inbox: ${error.message}")
+                }
+            )
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        globalInboxSubscription?.dispose()
     }
 }
 
