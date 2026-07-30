@@ -16,23 +16,33 @@ class UnreadChatsStore @Inject constructor(
     private val UNREAD_CHATS_KEY = stringSetPreferencesKey("unread_chat_ids")
 
     // Expose the unread IDs as a reactive Flow of Set<Long>
-    val unreadIdsFlow: Flow<Set<Long>> = dataStore.data
-        .map { preferences ->
-            val stringSet = preferences[UNREAD_CHATS_KEY] ?: emptySet()
-            stringSet.mapNotNull { it.toLongOrNull() }.toSet()
-        }
+    fun getUnreadIdsFlowForUser(userId: String): Flow<Set<Long>> {
+        return dataStore.data.map { preferences ->
+            val entries = preferences[UNREAD_CHATS_KEY] ?: emptySet()
+            entries.mapNotNull { entry ->
+                val parts = entry.split(":")
+                if (parts.size == 2 && parts[0] == userId) {
+                    parts[1].toLongOrNull()
+                } else {
+                    null
+                }
+            }.toSet()
 
-    suspend fun addUnreadChatId(chatId: Long) {
+        }
+    }
+    suspend fun addUnreadChatId(userId: String, chatId: Long) {
         dataStore.edit { preferences ->
-            val currentSet = preferences[UNREAD_CHATS_KEY] ?: emptySet()
-            preferences[UNREAD_CHATS_KEY] = currentSet + chatId.toString()
+            val currentEntries = preferences[UNREAD_CHATS_KEY] ?: emptySet()
+            val newEntry = "$userId:$chatId"
+            preferences[UNREAD_CHATS_KEY] = currentEntries + newEntry
         }
     }
 
-    suspend fun removeUnreadChatId(chatId: Long) {
+    suspend fun removeUnreadChatId(userId: Long, chatId: Long) {
         dataStore.edit { preferences ->
             val currentSet = preferences[UNREAD_CHATS_KEY] ?: emptySet()
-            preferences[UNREAD_CHATS_KEY] = currentSet - chatId.toString()
+            val targetEntry = "$userId:$chatId"
+            preferences[UNREAD_CHATS_KEY] = currentSet - targetEntry
         }
     }
 

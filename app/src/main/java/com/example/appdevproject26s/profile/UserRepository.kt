@@ -1,14 +1,43 @@
 package com.example.appdevproject26s.user
 
+import com.example.appdevproject26s.auth.AuthRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UserRepository @Inject constructor(
-    private val userApiService: UserApiService
+    private val userApiService: UserApiService,
+    private val authRepository: AuthRepository
 ) {
+    private val _currentUser = MutableStateFlow<UserProfileResponse?>(null)
+    val currentUser: StateFlow<UserProfileResponse?> = _currentUser.asStateFlow()
+
+    init {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            authRepository.isLoggedInFlow.collect { isLoggedIn ->
+                if (isLoggedIn) {
+                    fetchCurrentUser()
+                } else{
+                    _currentUser.value = null
+                }
+            }
+        }
+    }
+
+    suspend fun fetchCurrentUser() {
+        getCurrentUser().fold(
+            onSuccess = { user -> _currentUser.value = user },
+            onFailure = { _currentUser.value = null }
+        )
+    }
 
     suspend fun getCurrentUser(): Result<UserProfileResponse> {
         return withContext(Dispatchers.IO) {

@@ -125,16 +125,16 @@ class MainActivity : ComponentActivity() {
                         val senderId = newMessage.senderId
 
                         if (chatId != null) {
-                            val isCurrentltViewingChat = (activeChatStore.activeChatId.value == chatId)
+                            val isCurrentlyViewingChat = (activeChatStore.activeChatId.value == chatId)
 
-                            if (senderId != currentUserId && !isCurrentltViewingChat ) {
+                            if (senderId != currentUserId && !isCurrentlyViewingChat ) {
                                 appNotificationManager.showMessageNotification(
                                     senderName = newMessage.senderUsername ?: "unknown",
                                     messageText = newMessage.content ?: "",
                                     chatId = chatId
                                     )
                                 lifecycleScope.launch {
-                                    unreadChatsStore.addUnreadChatId(chatId)
+                                    unreadChatsStore.addUnreadChatId(userId = currentUserId.toString(), chatId = chatId)
                                 }
                             }
                         }

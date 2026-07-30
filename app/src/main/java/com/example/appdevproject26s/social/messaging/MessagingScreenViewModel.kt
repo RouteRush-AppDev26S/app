@@ -10,6 +10,7 @@ import com.example.appdevproject26s.social.friends.FriendshipResponse
 import com.example.appdevproject26s.user.UserProfileResponse
 import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.kevincianfarini.alchemist.scalar.toPower
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,9 +43,7 @@ class MessagingScreenViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
-
-    private val _currentUser = MutableStateFlow<UserProfileResponse?>(null)
-    val currentUser: StateFlow<UserProfileResponse?> = _currentUser.asStateFlow()
+    val currentUser = userRepository.currentUser
 
     private val _chats = MutableStateFlow<List<ChatResponse>>(emptyList())
     val chats: StateFlow<List<ChatResponse>> = _chats.asStateFlow()
@@ -52,7 +51,11 @@ class MessagingScreenViewModel @Inject constructor(
     private val _selectedChat = MutableStateFlow<ChatResponse?>(null)
     val selectedChat: StateFlow<ChatResponse?> = _selectedChat.asStateFlow()
 
-    val unreadChatIds: StateFlow<Set<Long>> = unreadChatsStore.unreadIdsFlow
+    val unreadChatIds: StateFlow<Set<Long>> = currentUser
+        .flatMapLatest { user ->
+            val userId = user?.id?.toString() ?: ""
+            unreadChatsStore.getUnreadIdsFlowForUser(userId)
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -122,11 +125,9 @@ class MessagingScreenViewModel @Inject constructor(
         viewModelScope.launch {
             authRepo.isLoggedInFlow.collect { loggedIn ->
                 if (loggedIn) {
-                    fetchCurrentUser()
                     fetchChats()
                     fetchFriends()
                 } else {
-                    _currentUser.value = null
                     _chats.value = emptyList()
                     _friends.value = emptyList()
                 }
@@ -134,19 +135,6 @@ class MessagingScreenViewModel @Inject constructor(
         }
     }
 
-    private fun fetchCurrentUser() {
-        viewModelScope.launch {
-            userRepository.getCurrentUser().fold(
-                onSuccess = { user ->
-                    _currentUser.value = user
-//                    setupInboxListener(user.id)
-                            },
-                onFailure = { error ->
-                    _currentUser.value = null
-                }
-            )
-        }
-    }
 
     fun fetchChats() {
         viewModelScope.launch {
@@ -175,8 +163,10 @@ class MessagingScreenViewModel @Inject constructor(
         _selectedChat.value = chat
         activeChatStore.setActiveChatId(chat?.id)
         if (chat?.id != null) {
+            val userId = currentUser.value?.id ?: return
+
             viewModelScope.launch {
-                unreadChatsStore.removeUnreadChatId(chat.id)
+                unreadChatsStore.removeUnreadChatId(userId = userId, chatId = chat.id)
                 appNotificationManager.dismissMessageNotification(chat.id)
             }
         }
