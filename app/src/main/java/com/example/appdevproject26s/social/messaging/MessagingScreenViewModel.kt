@@ -26,7 +26,8 @@ class MessagingScreenViewModel @Inject constructor(
     authRepo: AuthRepository,
     private val messagingRepository: MessagingRepository,
     private val friendRepository: FriendRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val unreadChatsStore: UnreadChatsStore
 
 ) : ViewModel() {
 
@@ -46,8 +47,12 @@ class MessagingScreenViewModel @Inject constructor(
     private val _selectedChat = MutableStateFlow<ChatResponse?>(null)
     val selectedChat: StateFlow<ChatResponse?> = _selectedChat.asStateFlow()
 
-    private val _unreadChatIds = MutableStateFlow<Set<Long>>(emptySet())
-    val unreadChatIds: StateFlow<Set<Long>> = _unreadChatIds.asStateFlow()
+    val unreadChatIds: StateFlow<Set<Long>> = unreadChatsStore.unreadIdsFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptySet()
+        )
 
     private val _friends = MutableStateFlow<List<FriendshipResponse>>(emptyList())
     val friends: StateFlow<List<FriendshipResponse>> = _friends.asStateFlow()
@@ -149,7 +154,9 @@ class MessagingScreenViewModel @Inject constructor(
 
             // If a message arrives for a chat the user is NOT currently looking at, mark it unread
             if (newMessage.chatId != null && newMessage.chatId != currentSelectedChatId) {
-                _unreadChatIds.value += newMessage.chatId
+                viewModelScope.launch {
+                    unreadChatsStore.addUnreadChatId(newMessage.chatId)
+                }
             }
 
             // Refresh the chat list so it reorders to the top with the latest preview
@@ -173,7 +180,9 @@ class MessagingScreenViewModel @Inject constructor(
     fun selectChat(chat: ChatResponse?) {
         _selectedChat.value = chat
         if (chat?.id != null) {
-            _unreadChatIds.value = _unreadChatIds.value - chat.id
+            viewModelScope.launch {
+                unreadChatsStore.removeUnreadChatId(chat.id)
+            }
         }
     }
 
