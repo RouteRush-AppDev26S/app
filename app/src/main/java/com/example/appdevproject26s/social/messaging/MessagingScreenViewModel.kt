@@ -28,6 +28,7 @@ class MessagingScreenViewModel @Inject constructor(
     private val friendRepository: FriendRepository,
     private val userRepository: UserRepository,
     private val unreadChatsStore: UnreadChatsStore,
+    private val activeChatStore: ActiveChatStore,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -170,6 +171,7 @@ class MessagingScreenViewModel @Inject constructor(
 
     fun selectChat(chat: ChatResponse?) {
         _selectedChat.value = chat
+        activeChatStore.setActiveChatId(chat?.id)
         if (chat?.id != null) {
             viewModelScope.launch {
                 unreadChatsStore.removeUnreadChatId(chat.id)
@@ -225,5 +227,10 @@ class MessagingScreenViewModel @Inject constructor(
         } else {
             currentList + username
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeChatStore.setActiveChatId(null)
     }
 }

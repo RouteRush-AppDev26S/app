@@ -27,6 +27,7 @@ import com.example.appdevproject26s.profile.ProfileScreen
 import com.example.appdevproject26s.route.HomeScreen
 import com.example.appdevproject26s.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
+import com.example.appdevproject26s.social.messaging.ActiveChatStore
 import com.example.appdevproject26s.social.messaging.MessagingRepository
 import com.example.appdevproject26s.social.messaging.MessagingScreen
 import com.example.appdevproject26s.social.messaging.UnreadChatsStore
@@ -56,6 +57,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var unreadChatsStore: UnreadChatsStore
+
+    @Inject
+    lateinit var activeChatStore: ActiveChatStore
 
     @Inject
     lateinit var appNotificationManager: AppNotificationManager
@@ -129,7 +133,9 @@ class MainActivity : ComponentActivity() {
                         val senderId = newMessage.senderId
 
                         if (chatId != null) {
-                            if (senderId != currentUserId) {
+                            val isCurrentltViewingChat = (activeChatStore.activeChatId.value == chatId)
+
+                            if (senderId != currentUserId && !isCurrentltViewingChat ) {
                                 appNotificationManager.showMessageNotification(
                                     senderName = newMessage.senderUsername ?: "unknown",
                                     messageText = newMessage.content ?: "",
