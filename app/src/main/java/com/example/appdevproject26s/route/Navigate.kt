@@ -58,6 +58,7 @@ class Navigate @Inject constructor (
 
     override var noHighway: Boolean = false
     var old: Location? = null
+    private var lastTrackedPos: Location? = null
 
     override var routeaktiv: Boolean = false
     override var currentTrip: Trip? by mutableStateOf(null)
@@ -294,9 +295,12 @@ class Navigate @Inject constructor (
     override fun updatePosition(now: Location) {
         scope.launch {
             val lastPos = old
+            old = now
             distance += if (lastPos != null) tracking.haversineDistance(lastPos, now)/1000 else 0.0
 
-            if (lastPos == null || tracking.haversineDistance(lastPos, now) > 100) {
+            val lastTracked = lastTrackedPos
+            if (lastTracked == null || tracking.haversineDistance(lastTracked, now) > 100) {
+                lastTrackedPos = now
                 getSpeedLimit(now)
                 val addr = updateAdresse(now)
                 withContext(Dispatchers.Main) {
@@ -308,7 +312,7 @@ class Navigate @Inject constructor (
                     val currentKmh = if (lastPos != null) tracking.calculateKmhWithLocation(distance, lastPos, now) else 0.0
                     trackPoints = tracking.addTrakkingData(
                         trackPoints = trackPoints,
-                        start = lastPos ?: now,
+                        start = lastTracked ?: now,
                         stop = now,
                         schritte = zahler.schritte,
                         kmh = currentKmh
@@ -325,7 +329,6 @@ class Navigate @Inject constructor (
                     showChangeDirection()
                 }
             }
-            old = now
         }
     }
 

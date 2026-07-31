@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.appdevproject26s.weather.WeatherFeature
 
 @Composable
 fun IconLayer(
@@ -35,6 +36,8 @@ fun IconLayer(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val iconModifier = Modifier.size(72.dp)
+
+            WeatherFeature(iconModifier = iconModifier)
 
             CompassOverlay(
                 bearing = homeViewModel.cameraState.position.bearing,

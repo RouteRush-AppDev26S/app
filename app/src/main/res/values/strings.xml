@@ -5,6 +5,8 @@
     <string name="leaderboard_title">Leaderboard</string>
     <string name="challenge_title">Weekly Challenge</string>
     <string name="achievements_title">Achievements</string>
+    <string name="stats_title">Statistiken</string>
+    <string name="heatmap_title">Heatmap</string>
     <string name="settings_title">Settings</string>
     <string name="messages_title">Messages</string>
     <string name="profile_title">Profile</string>
