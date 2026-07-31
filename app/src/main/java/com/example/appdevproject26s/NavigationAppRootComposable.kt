@@ -13,6 +13,8 @@ import com.example.appdevproject26s.route.HomeScreen
 import com.example.appdevproject26s.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
 import com.example.appdevproject26s.social.messaging.MessagingScreen
+import com.example.appdevproject26s.stats.DashboardScreen
+import com.example.appdevproject26s.stats.HeatmapScreen
 
 @Composable
 fun NavigationAppRootComposable(
@@ -39,5 +41,7 @@ fun NavigationAppRootComposable(
         composable("challenge") { ChallengeScreen(navController) }
         composable("achievements") { AchievementScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
+        composable("statistics") { DashboardScreen(navController) }
+        composable("heatmap") { HeatmapScreen(navController) }
     }
 }
