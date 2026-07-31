@@ -20,7 +20,7 @@ class SessionManager @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun startSessionObservation() {
+    init {
         scope.launch {
             authRepository.isLoggedInFlow.combine(authRepository.tokenFlow) { isLoggedIn, token ->
                 Pair(isLoggedIn, token)
@@ -28,7 +28,6 @@ class SessionManager @Inject constructor(
                 if (isLoggedIn && !token.isNullOrBlank()) {
                     if (!webSocketManager.isConnected) {
                         webSocketManager.connect(jwtToken = token)
-                        Log.d("TOKEN", token)
                     }
                     inboxManager.startListening()
                 } else {

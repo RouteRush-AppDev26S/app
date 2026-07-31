@@ -8,19 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.example.appdevproject26s.network.SessionManager
 import com.example.appdevproject26s.ui.theme.AppDevProject26STheme
 import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var sessionManager: SessionManager
-
     private var navigatedChatIdState by mutableStateOf<Long?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,12 +30,6 @@ class MainActivity : ComponentActivity() {
 
             }
         }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sessionManager.startSessionObservation()
-            }
-        }
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
@@ -53,8 +39,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        sessionManager.terminateSession()
-    }
 }
