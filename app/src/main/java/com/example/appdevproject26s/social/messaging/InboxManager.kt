@@ -1,6 +1,8 @@
 package com.example.appdevproject26s.social.messaging
 
 import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.appdevproject26s.modules.AppNotificationManager
 import com.example.appdevproject26s.user.UserRepository
 import io.reactivex.disposables.Disposable
@@ -22,6 +24,9 @@ class InboxManager @Inject constructor(
     private var globalInboxSubscription: Disposable? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private fun isAppInForeGround(): Boolean {
+        return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+    }
     fun startListening() {
         if (globalInboxSubscription != null) return
 
@@ -35,10 +40,11 @@ class InboxManager @Inject constructor(
                         val chatId = newMessage.chatId
                         val senderId = newMessage.senderId
 
-                        if (chatId != null) {
+                        if (chatId != null && senderId != currentUserId) {
+                            val isAppForeground = isAppInForeGround()
                             val isCurrentlyViewingChat = (activeChatStore.activeChatId.value == chatId)
 
-                            if (senderId != currentUserId && !isCurrentlyViewingChat) {
+                            if (!isAppForeground || !isCurrentlyViewingChat) {
                                 appNotificationManager.showMessageNotification(
                                     senderName = newMessage.senderUsername ?: "unknown",
                                     messageText = newMessage.content ?: "",

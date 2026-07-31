@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.appdevproject26s"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -85,4 +85,5 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.rxandroid)
     implementation(libs.rxjava)
+    implementation(libs.androidx.lifecycle.process)
 }
