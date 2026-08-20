@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.expressions.dsl.const
@@ -40,7 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun MapLayer(
     onMenuClick: () -> Unit = {},
-    homeViewModel: HomeScreenViewModel = hiltViewModel()
+    homeViewModel: MapScreenViewModel = hiltViewModel()
 ) {
     val density = LocalDensity.current
 

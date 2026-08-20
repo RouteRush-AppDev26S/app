@@ -1,6 +1,5 @@
 package com.example.appdevproject26s.route
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Looper
 import androidx.annotation.RequiresPermission
@@ -8,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Density
@@ -40,7 +38,7 @@ import javax.inject.Inject
 const val PIXELS_PER_TILE = 256
 
 @HiltViewModel
-class HomeScreenViewModel @Inject constructor(
+class MapScreenViewModel @Inject constructor(
     private val repository: MapSettingsRepository,
     private val navigate: Navigate,
     private val locationClient: FusedLocationProviderClient,

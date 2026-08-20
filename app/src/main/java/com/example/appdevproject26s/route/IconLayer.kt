@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
@@ -15,9 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.appdevproject26s.weather.WeatherFeature
@@ -27,7 +24,7 @@ fun IconLayer(
     modifier: Modifier = Modifier,
     onResetToNorth: () -> Unit,
     onMenuClick: () -> Unit,
-    homeViewModel: HomeScreenViewModel = hiltViewModel()
+    homeViewModel: MapScreenViewModel = hiltViewModel()
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(

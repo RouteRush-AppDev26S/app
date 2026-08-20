@@ -24,8 +24,8 @@ import com.example.appdevproject26s.ScreenScaffold
 import com.example.appdevproject26s.StatsPopup
 
 @Composable
-fun HomeScreen(navController: NavController) {
-    val viewModel: HomeScreenViewModel = hiltViewModel()
+fun MapScreen(navController: NavController) {
+    val viewModel: MapScreenViewModel = hiltViewModel()
     val isPlanningMode by viewModel.isPlanningMode.collectAsState()
     val isSelectingDestination by viewModel.isSelectingDestination.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()

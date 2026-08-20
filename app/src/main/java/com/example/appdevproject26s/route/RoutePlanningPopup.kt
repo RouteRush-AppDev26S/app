@@ -14,7 +14,7 @@ import androidx.compose.ui.window.Dialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutePlanningPopup(
-    viewModel: HomeScreenViewModel,
+    viewModel: MapScreenViewModel,
     onDismiss: () -> Unit,
 ) {
     val isRoundTrip by viewModel.isRoundTrip.collectAsState()

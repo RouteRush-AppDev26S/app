@@ -26,7 +26,7 @@ import kotlin.text.split
 @Composable
 fun RouteScreen(
     navController: NavController,
-    homeViewModel: HomeScreenViewModel = hiltViewModel()
+    homeViewModel: MapScreenViewModel = hiltViewModel()
 ) {
     val instructions = homeViewModel.manoevertext
 
