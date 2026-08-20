@@ -4,13 +4,12 @@
  */
 package com.example.appdevproject26s
 
-import androidx.compose.remote.creation.dsl.second
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.appdevproject26s.route.Navigate
-import com.example.appdevproject26s.route.Navigate.manoevertext
-import com.example.appdevproject26s.route.Navigate.speedLimit
-import com.example.appdevproject26s.route.Location
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.Navigate.manoevertext
+import com.example.appdevproject26s.map.route.Navigate.speedLimit
+import com.example.appdevproject26s.map.route.Location
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test

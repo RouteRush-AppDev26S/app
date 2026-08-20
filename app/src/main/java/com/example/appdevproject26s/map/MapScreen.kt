@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map
 
 import android.Manifest
 import android.os.Build
@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import com.example.appdevproject26s.R
 import com.example.appdevproject26s.ScreenScaffold
 import com.example.appdevproject26s.StatsPopup
+import com.example.appdevproject26s.map.route.RoutePlanningPopup
 
 @Composable
 fun MapScreen(navController: NavController) {

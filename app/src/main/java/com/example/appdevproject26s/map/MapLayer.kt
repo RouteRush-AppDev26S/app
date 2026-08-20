@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -33,6 +33,7 @@ import org.maplibre.spatialk.geojson.LineString
 import org.maplibre.spatialk.geojson.MultiPoint
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.maplibre.spatialk.geojson.Position
 
 @Composable
 fun MapLayer(
@@ -112,7 +113,7 @@ fun MapLayer(
             )
 
             // Tracking-Pfad (Traceroute)
-            val trackPathPoints = trackPoints.map { org.maplibre.spatialk.geojson.Position(it.lon, it.lat) }
+            val trackPathPoints = trackPoints.map { Position(it.lon, it.lat) }
             val trackSource = rememberGeoJsonSource(
                 data = if (trackPathPoints.size >= 2) {
                     GeoJsonData.Features(LineString(trackPathPoints))

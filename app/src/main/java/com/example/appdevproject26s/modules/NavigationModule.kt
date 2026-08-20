@@ -5,9 +5,9 @@ import android.os.Build
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.room.Room
-import com.example.appdevproject26s.route.RouteDao
-import com.example.appdevproject26s.route.RouteDatabase
-import com.example.appdevproject26s.route.Zeitberechnung
+import com.example.appdevproject26s.map.route.RouteDao
+import com.example.appdevproject26s.map.route.RouteDatabase
+import com.example.appdevproject26s.map.route.Zeitberechnung
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -1,13 +1,10 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
-import com.google.gson.annotations.SerializedName
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.maplibre.android.geometry.LatLng
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header

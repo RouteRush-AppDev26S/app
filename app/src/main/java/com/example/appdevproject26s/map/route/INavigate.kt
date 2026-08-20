@@ -1,9 +1,6 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import org.maplibre.spatialk.geojson.Position
 
 

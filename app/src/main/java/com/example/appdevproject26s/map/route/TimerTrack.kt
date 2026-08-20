@@ -1,5 +1,4 @@
-
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -9,8 +9,8 @@ import com.example.appdevproject26s.gamification.achievements.AchievementScreen
 import com.example.appdevproject26s.gamification.challenges.ChallengeScreen
 import com.example.appdevproject26s.gamification.leaderboard.LeaderboardScreen
 import com.example.appdevproject26s.profile.ProfileScreen
-import com.example.appdevproject26s.route.MapScreen
-import com.example.appdevproject26s.route.RouteScreen
+import com.example.appdevproject26s.map.MapScreen
+import com.example.appdevproject26s.map.route.RouteScreen
 import com.example.appdevproject26s.social.friends.FriendsScreen
 import com.example.appdevproject26s.social.messaging.MessagingScreen
 import com.example.appdevproject26s.stats.DashboardScreen

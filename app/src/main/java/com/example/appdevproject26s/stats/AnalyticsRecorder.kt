@@ -3,9 +3,9 @@ package com.example.appdevproject26s.stats
 import android.util.Log
 import androidx.compose.runtime.snapshotFlow
 import com.example.appdevproject26s.auth.AuthRepository
-import com.example.appdevproject26s.route.Navigate
-import com.example.appdevproject26s.route.OrsTrackPoint
-import com.example.appdevproject26s.route.Schrittzahler
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.OrsTrackPoint
+import com.example.appdevproject26s.map.route.Schrittzahler
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged

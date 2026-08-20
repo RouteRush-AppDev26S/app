@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +21,7 @@ import com.example.appdevproject26s.R
 import com.example.appdevproject26s.ScreenScaffold
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.appdevproject26s.map.MapScreenViewModel
 import kotlin.text.split
 
 @Composable

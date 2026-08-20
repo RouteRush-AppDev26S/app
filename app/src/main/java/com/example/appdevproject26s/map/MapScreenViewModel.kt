@@ -1,5 +1,6 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Looper
 import androidx.annotation.RequiresPermission
@@ -30,6 +31,12 @@ import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 import java.util.Locale
 import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.map.route.Location
+import com.example.appdevproject26s.map.route.MatheFile
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.Schrittzahler
+import com.example.appdevproject26s.map.route.Speed
+import com.example.appdevproject26s.map.route.Timer
 import com.example.appdevproject26s.steps.StepsRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -307,7 +314,13 @@ class MapScreenViewModel @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             result.lastLocation?.let { loc ->
                 _userLocation.value = Position(loc.longitude, loc.latitude)
-                navigate.updatePosition(Location(lat = loc.latitude, lon = loc.longitude, time = loc.time))
+                navigate.updatePosition(
+                    Location(
+                        lat = loc.latitude,
+                        lon = loc.longitude,
+                        time = loc.time
+                    )
+                )
             }
         }
     }
@@ -328,7 +341,7 @@ class MapScreenViewModel @Inject constructor(
 
 
     @SuppressLint("MissingPermission")
-    @RequiresPermission(allOf = [android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION])
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2_000L)
             .setMinUpdateDistanceMeters(1f)
