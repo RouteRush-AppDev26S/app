@@ -7,8 +7,6 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.location.Geocoder
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import com.google.gson.Gson
 import org.maplibre.spatialk.geojson.Position
 
@@ -37,7 +35,6 @@ import kotlin.text.split
 class Navigate @Inject constructor (
     @ApplicationContext private val context: Context,
     private val db: RouteDao,
-    private val vibrator: Vibrator,
     private val zeitberechnung: Zeitberechnung,
     private val api: OrsApi,
     private val tracking: MatheFile,
@@ -97,25 +94,6 @@ class Navigate @Inject constructor (
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job())
     private val geocoder: Geocoder = Geocoder(context, Locale.getDefault())
 
-    fun triggerVibration(duration: Long = 500) {
-        val currentVibrator = vibrator
-        Log.d(TAG, "Triggering vibration: $duration ms")
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                currentVibrator.vibrate(
-                    VibrationEffect.createOneShot(
-                        duration,
-                        VibrationEffect.DEFAULT_AMPLITUDE
-                    )
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                currentVibrator.vibrate(duration)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Vibration failed: ${e.message}")
-        }
-    }
     //val meineOrsApi = OrsClientAd.create(OpenRouteServiceApi::class.java)
     override fun routeReset(){
         currentTrip = null

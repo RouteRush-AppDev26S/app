@@ -2,7 +2,12 @@ package com.example.appdevproject26s.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues.TAG
+import android.os.Build
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
@@ -54,7 +59,8 @@ class MapScreenViewModel @Inject constructor(
     private val mathe : MatheFile,
     private val timertr: Timer,
     private val authRepository: AuthRepository,
-    private val stepsRepository: StepsRepository
+    private val stepsRepository: StepsRepository,
+    private val vibrator: Vibrator
 ) : ViewModel() {
 
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
@@ -370,7 +376,7 @@ class MapScreenViewModel @Inject constructor(
         if (currentTime - lastClickTime < 500) return
         lastClickTime = currentTime
 
-        navigate.triggerVibration(500)
+        triggerVibration(500)
 
         val tappedLoc = Location(point.latitude, point.longitude)
         navigate.routeReset()
@@ -419,6 +425,27 @@ class MapScreenViewModel @Inject constructor(
             stepsPerMinute = spm.toInt()
         } else {
             stepsPerMinute = 0
+        }
+    }
+
+
+    fun triggerVibration(duration: Long = 500) {
+        val currentVibrator = vibrator
+        Log.d(TAG, "Triggering vibration: $duration ms")
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                currentVibrator.vibrate(
+                    VibrationEffect.createOneShot(
+                        duration,
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    )
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                currentVibrator.vibrate(duration)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Vibration failed: ${e.message}")
         }
     }
 }
