@@ -145,6 +145,12 @@ class MapScreenViewModel @Inject constructor(
     private val _selectedVehicle = MutableStateFlow("driving-car")
     val selectedVehicle = _selectedVehicle.asStateFlow()
 
+    private val _selectedLocation = MutableStateFlow<Position?>(null)
+    val selectedLocation = _selectedLocation.asStateFlow()
+
+    private val _showBottomSheet = MutableStateFlow(false)
+    val showBottomSheet = _showBottomSheet.asStateFlow()
+
     private val _planningPoints = MutableStateFlow<List<Position>>(emptyList())
     val planningPoints = _planningPoints.asStateFlow()
 
@@ -368,6 +374,9 @@ class MapScreenViewModel @Inject constructor(
 
     fun onMapTap(point: Position, screePoint: DpOffset) {
         _fullscreen.value = !_fullscreen.value
+        if (_showBottomSheet.value){
+            dismissBottomSheet()
+        }
     }
 
     private var lastClickTime: Long = 0
@@ -379,8 +388,9 @@ class MapScreenViewModel @Inject constructor(
         triggerVibration(500)
 
         val tappedLoc = Location(point.latitude, point.longitude)
-        navigate.routeReset()
+
         if (_isSelectingDestination.value) {
+            navigate.routeReset()
             viewModelScope.launch {
                 val address = navigate.getAdresseOnce(tappedLoc)
 
@@ -404,10 +414,44 @@ class MapScreenViewModel @Inject constructor(
                 updatePlanningPoints()
             }
         } else {
-            val startLocation = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
-            openPlanningWithLocations(startLocation, tappedLoc)
+            _selectedLocation.value = point
+            _showBottomSheet.value = true
         }
     }
+
+    fun dismissBottomSheet() {
+        _showBottomSheet.value = false
+        _selectedLocation.value = null
+    }
+
+    fun navigateToSelected() {
+        val dest = _selectedLocation.value ?: return
+        val start = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
+        navigate.routeReset()
+        openPlanningWithLocations(start, Location(dest.latitude, dest.longitude))
+        dismissBottomSheet()
+    }
+
+    fun navigateFromSelected() {
+        val start = _selectedLocation.value ?: return
+        navigate.routeReset()
+        viewModelScope.launch {
+            _isPlanningMode.value = true
+            _isSelectingDestination.value = false
+            val startLoc = Location(start.latitude, start.longitude)
+            originalStartLoc = startLoc
+            originalDestLocs = mutableListOf(null)
+            _startAddressInput.value = navigate.getAdresseOnce(startLoc)
+            _destinations.value = listOf("")
+            updatePlanningPoints()
+            dismissBottomSheet()
+        }
+    }
+
+    fun shareLocation() {
+        // TODO
+    }
+
     private fun calculateAverageSpeed() {
         if (durationSeconds > 0) {
             // distance ist in km, durationSeconds in s

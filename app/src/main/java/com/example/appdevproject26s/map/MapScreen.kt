@@ -5,17 +5,24 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.health.connect.client.PermissionController
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -24,12 +31,14 @@ import com.example.appdevproject26s.ScreenScaffold
 import com.example.appdevproject26s.StatsPopup
 import com.example.appdevproject26s.map.route.RoutePlanningPopup
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(navController: NavController) {
     val viewModel: MapScreenViewModel = hiltViewModel()
     val isPlanningMode by viewModel.isPlanningMode.collectAsState()
     val isSelectingDestination by viewModel.isSelectingDestination.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val showBottomSheet by viewModel.showBottomSheet.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -122,6 +131,72 @@ fun MapScreen(navController: NavController) {
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp)
                 )
             }
+
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { viewModel.dismissBottomSheet() },
+                    sheetState = rememberModalBottomSheetState()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .navigationBarsPadding(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        ActionButton(
+                            icon = Icons.Default.Navigation,
+                            label = "Navigate to here",
+                            onClick = viewModel::navigateToSelected,
+                            modifier = Modifier.weight(1f)
+                        )
+                        ActionButton(
+                            icon = Icons.Default.Place,
+                            label = "Navigate from here",
+                            onClick = viewModel::navigateFromSelected,
+                            modifier = Modifier.weight(1f)
+                        )
+                        ActionButton(
+                            icon = Icons.Default.Share,
+                            label = "Share",
+                            onClick = viewModel::shareLocation,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+fun ActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
