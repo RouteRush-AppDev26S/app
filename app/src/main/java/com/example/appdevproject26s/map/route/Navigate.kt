@@ -2,14 +2,11 @@
 *                    Written by Hans Wornik
 *           Implementation of the Navigate Interface
  */
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.location.Geocoder
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import com.google.gson.Gson
 import org.maplibre.spatialk.geojson.Position
 
@@ -23,10 +20,8 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.maplibre.android.geometry.LatLng
 
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -40,7 +35,6 @@ import kotlin.text.split
 class Navigate @Inject constructor (
     @ApplicationContext private val context: Context,
     private val db: RouteDao,
-    private val vibrator: Vibrator,
     private val zeitberechnung: Zeitberechnung,
     private val api: OrsApi,
     private val tracking: MatheFile,
@@ -100,25 +94,6 @@ class Navigate @Inject constructor (
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + Job())
     private val geocoder: Geocoder = Geocoder(context, Locale.getDefault())
 
-    fun triggerVibration(duration: Long = 500) {
-        val currentVibrator = vibrator
-        Log.d(TAG, "Triggering vibration: $duration ms")
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                currentVibrator.vibrate(
-                    VibrationEffect.createOneShot(
-                        duration,
-                        VibrationEffect.DEFAULT_AMPLITUDE
-                    )
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                currentVibrator.vibrate(duration)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Vibration failed: ${e.message}")
-        }
-    }
     //val meineOrsApi = OrsClientAd.create(OpenRouteServiceApi::class.java)
     override fun routeReset(){
         currentTrip = null

@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,11 +10,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.appdevproject26s.map.MapScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutePlanningPopup(
-    viewModel: HomeScreenViewModel,
+    viewModel: MapScreenViewModel,
     onDismiss: () -> Unit,
 ) {
     val isRoundTrip by viewModel.isRoundTrip.collectAsState()

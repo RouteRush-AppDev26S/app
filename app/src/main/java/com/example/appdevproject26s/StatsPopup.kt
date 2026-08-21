@@ -7,15 +7,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.appdevproject26s.route.HomeScreenViewModel
-import com.example.appdevproject26s.route.MatheFile
+import com.example.appdevproject26s.map.MapScreenViewModel
 import java.util.Locale
-import com.google.android.gms.location.LocationResult
 
 
 @Composable
 fun StatsPopup(
-    viewModel: HomeScreenViewModel,
+    viewModel: MapScreenViewModel,
     modifier: Modifier = Modifier
 ) {
     val speedLimit = viewModel.speedLimit

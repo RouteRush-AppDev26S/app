@@ -1,23 +1,26 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.expressions.dsl.const
@@ -36,11 +39,12 @@ import org.maplibre.spatialk.geojson.LineString
 import org.maplibre.spatialk.geojson.MultiPoint
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import org.maplibre.spatialk.geojson.Position
 
 @Composable
 fun MapLayer(
     onMenuClick: () -> Unit = {},
-    homeViewModel: HomeScreenViewModel = hiltViewModel()
+    homeViewModel: MapScreenViewModel = hiltViewModel()
 ) {
     val density = LocalDensity.current
 
@@ -115,7 +119,7 @@ fun MapLayer(
             )
 
             // Tracking-Pfad (Traceroute)
-            val trackPathPoints = trackPoints.map { org.maplibre.spatialk.geojson.Position(it.lon, it.lat) }
+            val trackPathPoints = trackPoints.map { Position(it.lon, it.lat) }
             val trackSource = rememberGeoJsonSource(
                 data = if (trackPathPoints.size >= 2) {
                     GeoJsonData.Features(LineString(trackPathPoints))
@@ -145,6 +149,19 @@ fun MapLayer(
                     source = locationSource,
                     color = const(Color(0xFF2196F3)),
                     radius = const(5.dp)
+                )
+            }
+
+            val selectedLocation by homeViewModel.selectedLocation.collectAsState()
+            val selectedLocationSource = rememberGeoJsonSource(
+                data = GeoJsonData.Features(MultiPoint(listOfNotNull(selectedLocation)))
+            )
+            if (selectedLocation != null) {
+                CircleLayer(
+                    id = "selected-location",
+                    source = selectedLocationSource,
+                    color = const(Color.Red),
+                    radius = const(7.dp)
                 )
             }
 

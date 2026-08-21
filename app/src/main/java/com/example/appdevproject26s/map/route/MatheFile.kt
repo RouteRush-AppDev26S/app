@@ -1,11 +1,8 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
-import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.Priority
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date

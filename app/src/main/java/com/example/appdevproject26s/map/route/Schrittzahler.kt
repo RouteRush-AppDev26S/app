@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map.route
 
 import android.content.Context
 import android.hardware.Sensor

@@ -1,14 +1,18 @@
-package com.example.appdevproject26s.route
+package com.example.appdevproject26s.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues.TAG
+import android.os.Build
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Density
@@ -32,6 +36,12 @@ import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 import java.util.Locale
 import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.map.route.Location
+import com.example.appdevproject26s.map.route.MatheFile
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.Schrittzahler
+import com.example.appdevproject26s.map.route.Speed
+import com.example.appdevproject26s.map.route.Timer
 import com.example.appdevproject26s.steps.StepsRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +50,7 @@ import javax.inject.Inject
 const val PIXELS_PER_TILE = 256
 
 @HiltViewModel
-class HomeScreenViewModel @Inject constructor(
+class MapScreenViewModel @Inject constructor(
     private val repository: MapSettingsRepository,
     private val navigate: Navigate,
     private val locationClient: FusedLocationProviderClient,
@@ -49,7 +59,8 @@ class HomeScreenViewModel @Inject constructor(
     private val mathe : MatheFile,
     private val timertr: Timer,
     private val authRepository: AuthRepository,
-    private val stepsRepository: StepsRepository
+    private val stepsRepository: StepsRepository,
+    private val vibrator: Vibrator
 ) : ViewModel() {
 
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedInFlow
@@ -133,6 +144,12 @@ class HomeScreenViewModel @Inject constructor(
 
     private val _selectedVehicle = MutableStateFlow("driving-car")
     val selectedVehicle = _selectedVehicle.asStateFlow()
+
+    private val _selectedLocation = MutableStateFlow<Position?>(null)
+    val selectedLocation = _selectedLocation.asStateFlow()
+
+    private val _showBottomSheet = MutableStateFlow(false)
+    val showBottomSheet = _showBottomSheet.asStateFlow()
 
     private val _planningPoints = MutableStateFlow<List<Position>>(emptyList())
     val planningPoints = _planningPoints.asStateFlow()
@@ -309,7 +326,13 @@ class HomeScreenViewModel @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             result.lastLocation?.let { loc ->
                 _userLocation.value = Position(loc.longitude, loc.latitude)
-                navigate.updatePosition(Location(lat = loc.latitude, lon = loc.longitude, time = loc.time))
+                navigate.updatePosition(
+                    Location(
+                        lat = loc.latitude,
+                        lon = loc.longitude,
+                        time = loc.time
+                    )
+                )
             }
         }
     }
@@ -330,7 +353,7 @@ class HomeScreenViewModel @Inject constructor(
 
 
     @SuppressLint("MissingPermission")
-    @RequiresPermission(allOf = [android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION])
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2_000L)
             .setMinUpdateDistanceMeters(1f)
@@ -351,6 +374,9 @@ class HomeScreenViewModel @Inject constructor(
 
     fun onMapTap(point: Position, screePoint: DpOffset) {
         _fullscreen.value = !_fullscreen.value
+        if (_showBottomSheet.value){
+            dismissBottomSheet()
+        }
     }
 
     private var lastClickTime: Long = 0
@@ -359,11 +385,12 @@ class HomeScreenViewModel @Inject constructor(
         if (currentTime - lastClickTime < 500) return
         lastClickTime = currentTime
 
-        navigate.triggerVibration(500)
+        triggerVibration(500)
 
         val tappedLoc = Location(point.latitude, point.longitude)
-        navigate.routeReset()
+
         if (_isSelectingDestination.value) {
+            navigate.routeReset()
             viewModelScope.launch {
                 val address = navigate.getAdresseOnce(tappedLoc)
 
@@ -387,10 +414,44 @@ class HomeScreenViewModel @Inject constructor(
                 updatePlanningPoints()
             }
         } else {
-            val startLocation = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
-            openPlanningWithLocations(startLocation, tappedLoc)
+            _selectedLocation.value = point
+            _showBottomSheet.value = true
         }
     }
+
+    fun dismissBottomSheet() {
+        _showBottomSheet.value = false
+        _selectedLocation.value = null
+    }
+
+    fun navigateToSelected() {
+        val dest = _selectedLocation.value ?: return
+        val start = _userLocation.value?.let { Location(it.latitude, it.longitude) } ?: return
+        navigate.routeReset()
+        openPlanningWithLocations(start, Location(dest.latitude, dest.longitude))
+        dismissBottomSheet()
+    }
+
+    fun navigateFromSelected() {
+        val start = _selectedLocation.value ?: return
+        navigate.routeReset()
+        viewModelScope.launch {
+            _isPlanningMode.value = true
+            _isSelectingDestination.value = false
+            val startLoc = Location(start.latitude, start.longitude)
+            originalStartLoc = startLoc
+            originalDestLocs = mutableListOf(null)
+            _startAddressInput.value = navigate.getAdresseOnce(startLoc)
+            _destinations.value = listOf("")
+            updatePlanningPoints()
+            dismissBottomSheet()
+        }
+    }
+
+    fun shareLocation() {
+        // TODO
+    }
+
     private fun calculateAverageSpeed() {
         if (durationSeconds > 0) {
             // distance ist in km, durationSeconds in s
@@ -408,6 +469,27 @@ class HomeScreenViewModel @Inject constructor(
             stepsPerMinute = spm.toInt()
         } else {
             stepsPerMinute = 0
+        }
+    }
+
+
+    fun triggerVibration(duration: Long = 500) {
+        val currentVibrator = vibrator
+        Log.d(TAG, "Triggering vibration: $duration ms")
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                currentVibrator.vibrate(
+                    VibrationEffect.createOneShot(
+                        duration,
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    )
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                currentVibrator.vibrate(duration)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Vibration failed: ${e.message}")
         }
     }
 }
