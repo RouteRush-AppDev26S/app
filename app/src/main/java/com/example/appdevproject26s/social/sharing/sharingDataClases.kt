@@ -39,3 +39,19 @@ data class LocationShareResponse(
     val active: Boolean,
     val createdAt: String // ISO-8601 Instant String
 )
+
+// --- Pin Management DTOs ---
+
+data class CreatePinRequest(
+    val lat: Double,
+    val lng: Double,
+    val note: String? = null
+)
+
+data class PinResponse(
+    val id: Long,
+    val lat: Double,
+    val lng: Double,
+    val note: String?,
+    val userId: Long? = null
+)

@@ -9,6 +9,8 @@ import com.example.appdevproject26s.network.BACKEND_REST_URL
 import com.example.appdevproject26s.pr.PersonalBestApi
 import com.example.appdevproject26s.social.friends.FriendApiService
 import com.example.appdevproject26s.social.messaging.ChatApiService
+import com.example.appdevproject26s.social.sharing.PinApiService
+import com.example.appdevproject26s.social.sharing.SharingApiService
 import com.example.appdevproject26s.steps.StepsApi
 import com.example.appdevproject26s.user.UserApiService
 import dagger.Module
@@ -97,5 +99,17 @@ object BackendNetworkModule {
     @Singleton
     fun providePersonalBestApi(retrofit: Retrofit): PersonalBestApi {
         return retrofit.create(PersonalBestApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePinApiService(retrofit: Retrofit): PinApiService {
+        return retrofit.create(PinApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSharingApiService(retrofit: Retrofit): SharingApiService {
+        return retrofit.create(SharingApiService::class.java)
     }
 }
