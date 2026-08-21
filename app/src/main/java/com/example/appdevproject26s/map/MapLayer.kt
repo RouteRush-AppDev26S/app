@@ -84,7 +84,7 @@ fun MapLayer(
             // 3. Click Interaction
             onMapClick = { point, screenPoint ->
                 // Return Pass to allow the event to propagate to other layers
-                homeViewModel.onMapTap(point, screenPoint)
+                homeViewModel.onMapTap(point, screenPoint, density)
                 ClickResult.Pass
             },
             onMapLongClick = { point, screenPoint ->
@@ -172,6 +172,28 @@ fun MapLayer(
                 ),
                 color = const(Color.Green),
                 radius = const(7.dp)
+            )
+
+            val mapPins by homeViewModel.mapPins.collectAsState()
+            val myPinsSource = rememberGeoJsonSource(
+                data = GeoJsonData.Features(MultiPoint(mapPins.filter { it.isMine }.map { it.position }))
+            )
+            val sharedPinsSource = rememberGeoJsonSource(
+                data = GeoJsonData.Features(MultiPoint(mapPins.filter { !it.isMine }.map { it.position }))
+            )
+
+            CircleLayer(
+                id = "my-pins",
+                source = myPinsSource,
+                color = const(Color.Red),
+                radius = const(8.dp)
+            )
+
+            CircleLayer(
+                id = "shared-pins",
+                source = sharedPinsSource,
+                color = const(Color.Magenta),
+                radius = const(8.dp)
             )
 
             //Add Map Layer ex:SymbolLayer、CircleLayer、LineLayer...

@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Place
@@ -18,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -41,6 +44,7 @@ fun MapScreen(navController: NavController) {
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val showBottomSheet by viewModel.showBottomSheet.collectAsState()
     val showSharePinDialog by viewModel.showSharePinDialog.collectAsState()
+    val selectedMapPin by viewModel.selectedMapPin.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -174,6 +178,56 @@ fun MapScreen(navController: NavController) {
                     viewModel = viewModel,
                     onDismiss = { viewModel.dismissShareDialog() },
                 )
+            }
+
+            selectedMapPin?.let { pin ->
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (pin.isMine) "My pin" else "Shared pin",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                pin.note?.let {
+                                    Text(text = it, style = MaterialTheme.typography.bodyLarge)
+                                } ?: Text(
+                                    text = "",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
+
+                            Row {
+                                if (pin.isMine) {
+                                    IconButton(onClick = { viewModel.deleteSelectedPin() }) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = Color.Red
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { viewModel.dismissPinPopup() }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close")
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
