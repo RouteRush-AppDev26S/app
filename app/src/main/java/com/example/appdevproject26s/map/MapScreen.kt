@@ -30,6 +30,7 @@ import com.example.appdevproject26s.R
 import com.example.appdevproject26s.ScreenScaffold
 import com.example.appdevproject26s.StatsPopup
 import com.example.appdevproject26s.map.route.RoutePlanningPopup
+import com.example.appdevproject26s.social.sharing.PinSharingDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +40,7 @@ fun MapScreen(navController: NavController) {
     val isSelectingDestination by viewModel.isSelectingDestination.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val showBottomSheet by viewModel.showBottomSheet.collectAsState()
+    val showSharePinDialog by viewModel.showSharePinDialog.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -160,11 +162,18 @@ fun MapScreen(navController: NavController) {
                         ActionButton(
                             icon = Icons.Default.Share,
                             label = "Share",
-                            onClick = viewModel::shareLocation,
+                            onClick = viewModel::openSharePinDialog,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
+            }
+
+            if (showSharePinDialog) {
+                PinSharingDialog(
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.dismissShareDialog() },
+                )
             }
         }
     }

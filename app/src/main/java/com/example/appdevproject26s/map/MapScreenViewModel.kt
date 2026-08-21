@@ -19,6 +19,18 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.map.route.Location
+import com.example.appdevproject26s.map.route.MatheFile
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.Schrittzahler
+import com.example.appdevproject26s.map.route.Speed
+import com.example.appdevproject26s.map.route.Timer
+import com.example.appdevproject26s.social.friends.FriendRepository
+import com.example.appdevproject26s.social.friends.FriendshipResponse
+import com.example.appdevproject26s.social.sharing.PinRepository
+import com.example.appdevproject26s.social.sharing.SharingRepository
+import com.example.appdevproject26s.steps.StepsRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -27,26 +39,19 @@ import com.google.android.gms.location.Priority
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 import java.util.Locale
-import com.example.appdevproject26s.auth.AuthRepository
-import com.example.appdevproject26s.map.route.Location
-import com.example.appdevproject26s.map.route.MatheFile
-import com.example.appdevproject26s.map.route.Navigate
-import com.example.appdevproject26s.map.route.Schrittzahler
-import com.example.appdevproject26s.map.route.Speed
-import com.example.appdevproject26s.map.route.Timer
-import com.example.appdevproject26s.steps.StepsRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
+
 const val PIXELS_PER_TILE = 256
 
 @HiltViewModel
@@ -60,6 +65,9 @@ class MapScreenViewModel @Inject constructor(
     private val timertr: Timer,
     private val authRepository: AuthRepository,
     private val stepsRepository: StepsRepository,
+    private val friendRepository: FriendRepository,
+    private val pinRepository: PinRepository,
+    private val sharingRepository: SharingRepository,
     private val vibrator: Vibrator
 ) : ViewModel() {
 
@@ -90,6 +98,29 @@ class MapScreenViewModel @Inject constructor(
     private val _fullscreen = MutableStateFlow<Boolean>(false)
     val fullscreen = _fullscreen.asStateFlow()
     var cameraState = CameraState(firstPosition = defaultPos)
+
+
+    // --- Pin Sharing values ---
+
+    private val _isSharingPin = MutableStateFlow(false)
+    val isSharingPin: StateFlow<Boolean> = _isSharingPin.asStateFlow()
+
+    private val _showShareDialog = MutableStateFlow(false)
+    val showSharePinDialog: StateFlow<Boolean> = _showShareDialog.asStateFlow()
+
+    private val _friends = MutableStateFlow<List<FriendshipResponse>>(emptyList())
+    val friends: StateFlow<List<FriendshipResponse>> = _friends.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _pinNote = MutableStateFlow("")
+    val pinNote: StateFlow<String> = _pinNote.asStateFlow()
+
+    private val _friendsToSharePinWith = MutableStateFlow<List<String>>(emptyList())
+    val friendsToSharePinWith: StateFlow<List<String>> = _friendsToSharePinWith.asStateFlow()
+
+
 
     // 🟢 KORREKT: Compose State für Double
     var durationSeconds by mutableDoubleStateOf(0.0)
@@ -349,6 +380,16 @@ class MapScreenViewModel @Inject constructor(
                     repository.saveCameraPosition(position)
                 }
         }
+
+        viewModelScope.launch {
+            authRepository.isLoggedInFlow.collect { loggedIn ->
+                if (loggedIn) {
+                    fetchFriends()
+                } else {
+                    _friends.value = emptyList()
+                }
+            }
+        }
     }
 
 
@@ -448,8 +489,24 @@ class MapScreenViewModel @Inject constructor(
         }
     }
 
-    fun shareLocation() {
-        // TODO
+    fun openSharePinDialog() {
+        if (_friends.value.isEmpty()) {
+            fetchFriends()
+        }
+        _showShareDialog.value = true
+    }
+
+    fun fetchFriends() {
+        viewModelScope.launch {
+            friendRepository.getFriends().fold(
+                onSuccess = { friendList ->
+                    _friends.value = friendList
+                },
+                onFailure = {
+                    _friends.value = emptyList()
+                }
+            )
+        }
     }
 
     private fun calculateAverageSpeed() {
@@ -490,6 +547,75 @@ class MapScreenViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Vibration failed: ${e.message}")
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updatePinNote(note: String) {
+        _pinNote.value = note
+    }
+
+    fun dismissShareDialog() {
+        _searchQuery.value = ""
+        _friendsToSharePinWith.value = emptyList()
+        _showShareDialog.value = false
+    }
+
+    fun toggleSharePinWithUser(username: String) {
+        val currentList = _friendsToSharePinWith.value
+        _friendsToSharePinWith.value = if (currentList.contains(username)) {
+            currentList - username
+        } else {
+            currentList + username
+        }
+    }
+
+    fun sharePinWithFriends() {
+        val selectedUsers = _friendsToSharePinWith.value
+        val targetLocation = _selectedLocation.value
+
+        if (selectedUsers.isEmpty() || targetLocation == null) return
+
+        viewModelScope.launch {
+            _isSharingPin.value = true
+
+            val pinResult = pinRepository.createPin(
+                lat = targetLocation.latitude,
+                lng = targetLocation.longitude,
+                note = "Shared Location"
+            )
+
+            pinResult.fold(
+                onSuccess = { createdPin ->
+                    val pinId = createdPin.id
+
+                    selectedUsers.forEach { username ->
+                        sharingRepository.sharePin(
+                            pinId = pinId,
+                            username = username
+                        ).fold(
+                            onSuccess = {
+                                Log.d("MapScreenViewModel", "Successfully shared pin $pinId with $username")
+                            },
+                            onFailure = { error ->
+                                Log.e("MapScreenViewModel", "Failed to share pin $pinId with $username: ${error.message}")
+                            }
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    Log.e("MapScreenViewModel", "Failed to create pin prior to sharing: ${error.message}")
+                }
+
+            )
+
+            _isSharingPin.value = false
+
+            dismissShareDialog()
+            dismissBottomSheet()
         }
     }
 }
