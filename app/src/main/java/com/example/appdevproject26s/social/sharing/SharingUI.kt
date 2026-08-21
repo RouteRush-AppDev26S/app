@@ -34,6 +34,7 @@ fun PinSharingDialog(
 ) {
     val friends by viewModel.friends.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val pinNote by viewModel.pinNote.collectAsState()
     val isSharing by viewModel.isSharingPin.collectAsState()
 
     val friendsToSharePinWith by viewModel.friendsToSharePinWith.collectAsState()
@@ -61,6 +62,17 @@ fun PinSharingDialog(
                 Text("No friends available to share with.")
             } else {
                 Column {
+                    OutlinedTextField(
+                        value = pinNote,
+                        onValueChange = { viewModel.updatePinNote(it) },
+                        label = { Text("Add a note (optional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        singleLine = false,
+                        maxLines = 3
+                    )
+
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
