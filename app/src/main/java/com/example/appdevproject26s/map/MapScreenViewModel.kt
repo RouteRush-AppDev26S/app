@@ -19,6 +19,20 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appdevproject26s.auth.AuthRepository
+import com.example.appdevproject26s.map.route.Location
+import com.example.appdevproject26s.map.route.MatheFile
+import com.example.appdevproject26s.map.route.Navigate
+import com.example.appdevproject26s.map.route.Schrittzahler
+import com.example.appdevproject26s.map.route.Speed
+import com.example.appdevproject26s.map.route.Timer
+import com.example.appdevproject26s.social.friends.FriendRepository
+import com.example.appdevproject26s.social.friends.FriendshipResponse
+import com.example.appdevproject26s.social.sharing.MapPin
+import com.example.appdevproject26s.social.sharing.PinRepository
+import com.example.appdevproject26s.social.sharing.PinResponse
+import com.example.appdevproject26s.social.sharing.SharingRepository
+import com.example.appdevproject26s.steps.StepsRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -27,26 +41,19 @@ import com.google.android.gms.location.Priority
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 import java.util.Locale
-import com.example.appdevproject26s.auth.AuthRepository
-import com.example.appdevproject26s.map.route.Location
-import com.example.appdevproject26s.map.route.MatheFile
-import com.example.appdevproject26s.map.route.Navigate
-import com.example.appdevproject26s.map.route.Schrittzahler
-import com.example.appdevproject26s.map.route.Speed
-import com.example.appdevproject26s.map.route.Timer
-import com.example.appdevproject26s.steps.StepsRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
+
 const val PIXELS_PER_TILE = 256
 
 @HiltViewModel
@@ -60,6 +67,9 @@ class MapScreenViewModel @Inject constructor(
     private val timertr: Timer,
     private val authRepository: AuthRepository,
     private val stepsRepository: StepsRepository,
+    private val friendRepository: FriendRepository,
+    private val pinRepository: PinRepository,
+    private val sharingRepository: SharingRepository,
     private val vibrator: Vibrator
 ) : ViewModel() {
 
@@ -90,6 +100,29 @@ class MapScreenViewModel @Inject constructor(
     private val _fullscreen = MutableStateFlow<Boolean>(false)
     val fullscreen = _fullscreen.asStateFlow()
     var cameraState = CameraState(firstPosition = defaultPos)
+
+
+    // --- Pin Sharing values ---
+
+    private val _isSharingPin = MutableStateFlow(false)
+    val isSharingPin: StateFlow<Boolean> = _isSharingPin.asStateFlow()
+
+    private val _showShareDialog = MutableStateFlow(false)
+    val showSharePinDialog: StateFlow<Boolean> = _showShareDialog.asStateFlow()
+
+    private val _friends = MutableStateFlow<List<FriendshipResponse>>(emptyList())
+    val friends: StateFlow<List<FriendshipResponse>> = _friends.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _pinNote = MutableStateFlow("")
+    val pinNote: StateFlow<String> = _pinNote.asStateFlow()
+
+    private val _friendsToSharePinWith = MutableStateFlow<List<String>>(emptyList())
+    val friendsToSharePinWith: StateFlow<List<String>> = _friendsToSharePinWith.asStateFlow()
+
+
 
     // 🟢 KORREKT: Compose State für Double
     var durationSeconds by mutableDoubleStateOf(0.0)
@@ -153,6 +186,12 @@ class MapScreenViewModel @Inject constructor(
 
     private val _planningPoints = MutableStateFlow<List<Position>>(emptyList())
     val planningPoints = _planningPoints.asStateFlow()
+
+    private val _mapPins = MutableStateFlow<List<MapPin>>(emptyList())
+    val mapPins = _mapPins.asStateFlow()
+
+    private val _selectedMapPin = MutableStateFlow<MapPin?>(null)
+    val selectedMapPin = _selectedMapPin.asStateFlow()
 
     private var originalStartLoc: Location? = null
     private var originalDestLocs = mutableListOf<Location?>()
@@ -349,6 +388,51 @@ class MapScreenViewModel @Inject constructor(
                     repository.saveCameraPosition(position)
                 }
         }
+
+        viewModelScope.launch {
+            authRepository.isLoggedInFlow.collect { loggedIn ->
+                if (loggedIn) {
+                    fetchFriends()
+                    fetchPins()
+                } else {
+                    _friends.value = emptyList()
+                    _mapPins.value = emptyList()
+                }
+            }
+        }
+    }
+
+    fun fetchPins() {
+        viewModelScope.launch {
+            val myPinsResult = pinRepository.getMyPins()
+            val sharedPinsResult = sharingRepository.getPinsSharedWithMe()
+
+            val combinedPins = mutableListOf<MapPin>()
+
+            myPinsResult.onSuccess { pins ->
+                Log.e("NUMBEROwnPins", pins.size.toString())
+                combinedPins.addAll(pins.map { it.toMapPin(isMine = true) })
+            }
+
+            sharedPinsResult.onSuccess { shared ->
+                Log.e("NUMBERSHAREPINS", shared.size.toString())
+                Log.e("SharedContainsPin", shared.getOrNull(0)?.pin?.id.toString())
+                Log.d("SharedResults", shared.toString())
+                combinedPins.addAll(shared.mapNotNull { it.pin?.toMapPin(isMine = false) })
+            }
+
+            _mapPins.value = combinedPins
+            Log.e("NUMBERCombinedPins", combinedPins.size.toString())
+        }
+    }
+
+    private fun PinResponse.toMapPin(isMine: Boolean): MapPin {
+        return MapPin(
+            id = this.id,
+            position = Position(this.lng, this.lat),
+            note = this.note,
+            isMine = isMine
+        )
     }
 
 
@@ -372,10 +456,57 @@ class MapScreenViewModel @Inject constructor(
         speedkmh.stopSpeedTracking()
     }
 
-    fun onMapTap(point: Position, screePoint: DpOffset) {
+    fun onMapTap(point: Position, screenPoint: DpOffset, localDensity: Density) {
+        // Check if a pin was tapped
+        val tappedPin = findTappedPin(point, cameraState.position.zoom, localDensity.density)
+        if (tappedPin != null) {
+            _selectedMapPin.value = tappedPin
+            return
+        }
+
+        if (_selectedMapPin.value != null) {
+            _selectedMapPin.value = null
+            return
+        }
+
         _fullscreen.value = !_fullscreen.value
         if (_showBottomSheet.value){
             dismissBottomSheet()
+        }
+    }
+
+    private fun findTappedPin(tapPos: Position, zoom: Double, density: Float): MapPin? {
+        val tapLoc = Location(tapPos.latitude, tapPos.longitude)
+        val thresholdDp = 24.0 // Threshold in DP
+        
+        // Calculate meters per pixel at the current latitude
+        // Formula: 156543.03392 * cos(lat) / 2^zoom
+        val latRad = Math.toRadians(tapPos.latitude)
+        val metersPerPixel = 156543.03392 * Math.cos(latRad) / Math.pow(2.0, zoom)
+        val thresholdMeters = thresholdDp * density * metersPerPixel
+
+        return _mapPins.value.find { pin ->
+            val pinLoc = Location(pin.position.latitude, pin.position.longitude)
+            val dist = mathe.haversineDistance(tapLoc, pinLoc)
+            dist < thresholdMeters
+        }
+    }
+
+    fun dismissPinPopup() {
+        _selectedMapPin.value = null
+    }
+
+    fun deleteSelectedPin() {
+        val pin = _selectedMapPin.value ?: return
+        if (!pin.isMine) return
+
+        viewModelScope.launch {
+            pinRepository.deletePin(pin.id).onSuccess {
+                _mapPins.value = _mapPins.value.filter { it.id != pin.id }
+                dismissPinPopup()
+            }.onFailure {
+                Log.e("MapScreenViewModel", "Failed to delete pin: ${it.message}")
+            }
         }
     }
 
@@ -448,8 +579,24 @@ class MapScreenViewModel @Inject constructor(
         }
     }
 
-    fun shareLocation() {
-        // TODO
+    fun openSharePinDialog() {
+        if (_friends.value.isEmpty()) {
+            fetchFriends()
+        }
+        _showShareDialog.value = true
+    }
+
+    fun fetchFriends() {
+        viewModelScope.launch {
+            friendRepository.getFriends().fold(
+                onSuccess = { friendList ->
+                    _friends.value = friendList
+                },
+                onFailure = {
+                    _friends.value = emptyList()
+                }
+            )
+        }
     }
 
     private fun calculateAverageSpeed() {
@@ -490,6 +637,77 @@ class MapScreenViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Vibration failed: ${e.message}")
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updatePinNote(note: String) {
+        _pinNote.value = note
+    }
+
+    fun dismissShareDialog() {
+        _searchQuery.value = ""
+        _friendsToSharePinWith.value = emptyList()
+        _showShareDialog.value = false
+    }
+
+    fun toggleSharePinWithUser(username: String) {
+        val currentList = _friendsToSharePinWith.value
+        _friendsToSharePinWith.value = if (currentList.contains(username)) {
+            currentList - username
+        } else {
+            currentList + username
+        }
+    }
+
+    fun sharePinWithFriends() {
+        val selectedUsers = _friendsToSharePinWith.value
+        val targetLocation = _selectedLocation.value
+        val existingPin = _selectedMapPin.value
+        val note = _pinNote.value.ifBlank { "Shared Location" }
+
+        if (selectedUsers.isEmpty() || targetLocation == null) return
+
+        viewModelScope.launch {
+            _isSharingPin.value = true
+
+            val pinResult = pinRepository.createPin(
+                lat = targetLocation.latitude,
+                lng = targetLocation.longitude,
+                note = "Shared Location"
+            )
+
+            pinResult.fold(
+                onSuccess = { createdPin ->
+                    val pinId = createdPin.id
+
+                    selectedUsers.forEach { username ->
+                        sharingRepository.sharePin(
+                            pinId = pinId,
+                            username = username
+                        ).fold(
+                            onSuccess = {
+                                Log.d("MapScreenViewModel", "Successfully shared pin $pinId with $username")
+                            },
+                            onFailure = { error ->
+                                Log.e("MapScreenViewModel", "Failed to share pin $pinId with $username: ${error.message}")
+                            }
+                        )
+                    }
+                    fetchPins()
+                },
+                onFailure = { error ->
+                    Log.e("MapScreenViewModel", "Failed to create pin prior to sharing: ${error.message}")
+                }
+            )
+
+            _isSharingPin.value = false
+            dismissShareDialog()
+            dismissBottomSheet()
+            dismissPinPopup()
         }
     }
 }
