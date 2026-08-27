@@ -7,10 +7,8 @@ import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.modules.AppNotificationManager
 import com.example.appdevproject26s.social.friends.FriendRepository
 import com.example.appdevproject26s.social.friends.FriendshipResponse
-import com.example.appdevproject26s.user.UserProfileResponse
-import com.example.appdevproject26s.user.UserRepository
+import com.example.appdevproject26s.profile.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.kevincianfarini.alchemist.scalar.toPower
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow

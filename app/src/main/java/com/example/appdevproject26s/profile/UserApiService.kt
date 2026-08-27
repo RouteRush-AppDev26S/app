@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.user
+package com.example.appdevproject26s.profile
 
 import retrofit2.http.Body
 import retrofit2.http.GET

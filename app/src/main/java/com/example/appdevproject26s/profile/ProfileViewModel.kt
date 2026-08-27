@@ -6,8 +6,6 @@ import com.example.appdevproject26s.auth.AuthRepository
 import com.example.appdevproject26s.auth.AuthState
 import com.example.appdevproject26s.pr.PersonalBest
 import com.example.appdevproject26s.pr.PersonalBestApi
-import com.example.appdevproject26s.user.UserProfileResponse
-import com.example.appdevproject26s.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -86,8 +84,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _personalBests.value = personalBestApi.getPersonalBests()
-            } catch (e: Exception) {
             }
+            catch (_: Exception) {}
         }
     }
 
