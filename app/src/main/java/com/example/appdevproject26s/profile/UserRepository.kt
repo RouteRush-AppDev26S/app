@@ -1,4 +1,4 @@
-package com.example.appdevproject26s.user
+package com.example.appdevproject26s.profile
 
 import com.example.appdevproject26s.auth.AuthRepository
 import kotlinx.coroutines.CoroutineScope
@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +26,7 @@ class UserRepository @Inject constructor(
             authRepository.isLoggedInFlow.collect { isLoggedIn ->
                 if (isLoggedIn) {
                     fetchCurrentUser()
-                } else{
+                } else {
                     _currentUser.value = null
                 }
             }
@@ -44,7 +45,7 @@ class UserRepository @Inject constructor(
             try {
                 val profile = userApiService.getCurrentUser()
                 Result.success(profile)
-            } catch (e: retrofit2.HttpException) {
+            } catch (e: HttpException) {
                 val errorBody = e.response()?.errorBody()?.string()
                 val errorMessage = if (!errorBody.isNullOrBlank()) {
                     errorBody.replace("\"", "")
@@ -64,7 +65,7 @@ class UserRepository @Inject constructor(
                 val request = UpdateProfileRequest(username = username, email = email)
                 val updatedProfile = userApiService.updateProfile(request)
                 Result.success(updatedProfile)
-            } catch (e: retrofit2.HttpException) {
+            } catch (e: HttpException) {
                 val errorBody = e.response()?.errorBody()?.string()
                 val errorMessage = if (!errorBody.isNullOrBlank()) {
                     errorBody.replace("\"", "")
