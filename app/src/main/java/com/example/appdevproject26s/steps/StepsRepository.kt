@@ -9,36 +9,57 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
+@Singleton // one shared instance for whole app
 class StepsRepository @Inject constructor(
+
+    // Hilt gives app's context automatically
     @ApplicationContext private val context: Context,
+
+    // Hilt gives API to send steps to server
     private val stepsApi: StepsApi
 ) {
-    val readStepsPermission: String = HealthPermission.getReadPermission(StepsRecord::class)
+    // Need permission to read step count
+    val stepsPermission: String = HealthPermission.getReadPermission(StepsRecord::class)
 
-    private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    // Create Health Connect client
+    private val healthConnectClient = HealthConnectClient.getOrCreate(context)
 
-    fun isHealthConnectAvailable(): Boolean =
-        HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    // Check if Health Connect is installed
+    fun isHealthConnectAvailable(): Boolean {
+        val status = HealthConnectClient.getSdkStatus(context)
+        return status == HealthConnectClient.SDK_AVAILABLE
+    }
 
-    suspend fun hasStepsPermission(): Boolean =
-        healthConnectClient.permissionController.getGrantedPermissions().contains(readStepsPermission)
+    // Check if user approved permission
+    suspend fun hasStepsPermission(): Boolean {
+        val granted = healthConnectClient.permissionController.getGrantedPermissions()
+        return granted.contains(stepsPermission)
+    }
 
+    // Get today's step count
     suspend fun syncTodaySteps() {
+
+        // Time range (From midnight until now)
         val today = LocalDate.now()
-        val startOfDay = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+        val zoneId = ZoneId.systemDefault()
+        val startOfDay = today.atStartOfDay(zoneId).toInstant()
+        val now = Instant.now()
+        val timeRange = TimeRangeFilter.between(startOfDay, now)
 
-        val result = healthConnectClient.aggregate(
-            AggregateRequest(
-                metrics = setOf(StepsRecord.COUNT_TOTAL),
-                timeRangeFilter = TimeRangeFilter.between(startOfDay, Instant.now())
-            )
-        )
-        val steps = (result[StepsRecord.COUNT_TOTAL] ?: 0L).toInt()
+        // Add up all steps in time range
+        val request = AggregateRequest(metrics = setOf(StepsRecord.COUNT_TOTAL), timeRangeFilter = timeRange)
+        val result = healthConnectClient.aggregate(request)
 
-        stepsApi.report(ReportStepsRequest(date = today.toString(), steps = steps))
+        // If there are no steps yet, use 0
+        val totalSteps = result[StepsRecord.COUNT_TOTAL]
+        val steps: Int = totalSteps?.toInt() ?: 0
+
+        // Send to backend
+        val reportRequest = ReportStepsRequest(date = today.toString(), steps = steps)
+        stepsApi.report(reportRequest)
     }
 }
