@@ -50,12 +50,11 @@ class AchievementViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Check if user is logged in
-    val isLoggedIn: StateFlow<Boolean> = authRepo.isLoggedInFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
+    val isLoggedIn: StateFlow<Boolean> = authRepo.isLoggedInFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
 
     var achievements by mutableStateOf<List<Achievement>>(emptyList())
         private set
@@ -93,7 +92,6 @@ fun AchievementScreen(
 ) {
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
-    // Load achievements when user is logged in
     LaunchedEffect(isLoggedIn) {
 
         if (isLoggedIn) {
@@ -123,8 +121,7 @@ fun AchievementScreen(
                 Button(
                     onClick = { viewModel.load() },
                     modifier = Modifier.padding(top = 16.dp)
-                )
-                {
+                ) {
                     Text("Retry")
                 }
             }
