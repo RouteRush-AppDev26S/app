@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.appdevproject26s.modules.AppNotificationManager
-import com.example.appdevproject26s.user.UserRepository
+import com.example.appdevproject26s.profile.UserRepository
 import io.reactivex.disposables.Disposable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
