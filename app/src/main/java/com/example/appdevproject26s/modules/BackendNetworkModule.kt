@@ -12,7 +12,7 @@ import com.example.appdevproject26s.social.messaging.ChatApiService
 import com.example.appdevproject26s.social.sharing.PinApiService
 import com.example.appdevproject26s.social.sharing.SharingApiService
 import com.example.appdevproject26s.steps.StepsApi
-import com.example.appdevproject26s.user.UserApiService
+import com.example.appdevproject26s.profile.UserApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.appdevproject26s.pr.PersonalBest
-import com.example.appdevproject26s.user.UserProfileResponse
 
 @Composable
 fun UserProfileContent(
@@ -79,7 +78,10 @@ fun UserProfileContent(
                         )
                     }
                     LinearProgressIndicator(
-                        progress = { userProfile.xpIntoLevel.toFloat() / userProfile.xpForNextLevel.toFloat() },
+                        // Guard against xpForNextLevel == 0 (e.g. max level), which would otherwise divide to NaN
+                        progress = {
+                            if (userProfile.xpForNextLevel > 0) userProfile.xpIntoLevel.toFloat() / userProfile.xpForNextLevel.toFloat() else 1f
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (userProfile.admin) {
@@ -92,6 +94,7 @@ fun UserProfileContent(
                 }
             }
 
+            // PR
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(0.9f),

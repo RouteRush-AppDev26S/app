@@ -26,7 +26,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Optional: Start analytics recorder if required by your project
         analyticsRecorder.start(lifecycleScope)
 
         handleNotificationIntent(intent)
@@ -42,7 +41,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
-        // FIXED syntax error here: added ?. before takeIf
         val chatId = intent?.getLongExtra("EXTRA_CHAT_ID", -1L)?.takeIf { it != -1L }
         if (chatId != null) {
             navigatedChatIdState = chatId
