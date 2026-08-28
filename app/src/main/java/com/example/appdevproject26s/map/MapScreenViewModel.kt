@@ -80,7 +80,7 @@ class MapScreenViewModel @Inject constructor(
             initialValue = false
         )
 
-    val stepsReadPermission = stepsRepository.readStepsPermission
+    val stepsReadPermission = stepsRepository.stepsPermission
 
     fun isHealthConnectAvailable() = stepsRepository.isHealthConnectAvailable()
 
